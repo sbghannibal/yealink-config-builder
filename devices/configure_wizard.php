@@ -374,7 +374,7 @@ require_once __DIR__ . '/../admin/_header.php';
                     <button class="btn" type="submit">Volgende →</button>
                 </form>
             <?php else: ?>
-                <p>Kies het Yealink model voor deze configuratie:</p>
+                <p>Kies het toestel/model voor deze configuratie:</p>
                 <form method="post">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
                     <input type="hidden" name="action" value="select_type">

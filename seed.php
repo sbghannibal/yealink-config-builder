@@ -58,10 +58,15 @@ try {
     }
 
     // Insert device types
-    $types = ['T19P','T21P','T23P','T27P','T29P','T41P','T42P','T43P','T46P','T48P'];
+    $types = ['T19P','T21P','T23P','T27P','T29P','T41P','T42P','T43P','T46P','T48P','cisco_atabox_192','fasttel_ft600'];
     $stmtIns = $pdo->prepare('INSERT IGNORE INTO device_types (type_name, description) VALUES (?, ?)');
     foreach ($types as $t) {
-        $stmtIns->execute([$t, 'Yealink model ' . $t]);
+        $description = str_starts_with($t, 'T') ? 'Yealink model ' . $t : (
+            $t === 'cisco_atabox_192'
+                ? 'Cisco ATABOX model 192'
+                : 'Fasttel FT600 doorphone'
+        );
+        $stmtIns->execute([$t, $description]);
         echo "Ensured device type: $t" . PHP_EOL;
     }
 
