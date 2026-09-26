@@ -29,6 +29,20 @@ $csrf = $_SESSION['csrf_token'];
 $error = '';
 $success = '';
 
+// Detect whether master/child columns are present (check all four required columns)
+$has_master_child_columns = false;
+try {
+    $col_check = $pdo->query("
+        SELECT COUNT(*) FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'template_variables'
+          AND COLUMN_NAME IN ('variable_group','is_group_master','parent_variable_id','show_when_parent')
+    ");
+    $has_master_child_columns = ((int)$col_check->fetchColumn() === 4);
+} catch (Exception $e) {
+    // Column check failed; treat as not available
+}
+
 // Get template ID from query string
 $template_id = isset($_GET['template_id']) ? (int)$_GET['template_id'] : null;
 
@@ -302,20 +316,6 @@ if ($editing && $template_id) {
     } catch (Exception $e) {
         error_log('Failed to load variable: ' . $e->getMessage());
     }
-}
-
-// Detect whether master/child columns are present (check all four required columns)
-$has_master_child_columns = false;
-try {
-    $col_check = $pdo->query("
-        SELECT COUNT(*) FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE()
-          AND TABLE_NAME = 'template_variables'
-          AND COLUMN_NAME IN ('variable_group','is_group_master','parent_variable_id','show_when_parent')
-    ");
-    $has_master_child_columns = ((int)$col_check->fetchColumn() === 4);
-} catch (Exception $e) {
-    // Column check failed; treat as not available
 }
 
 require_once __DIR__ . '/_header.php';
