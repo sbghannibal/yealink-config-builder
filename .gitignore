@@ -71,3 +71,6 @@ downloads/T33G/*
 
 # Local backup files created during hotfixes
 *.bak.*
+
+# Install lock marker
+settings/.installed
