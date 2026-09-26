@@ -42,3 +42,23 @@ Ondersteunt naast bestaande Yealink-configuraties nu ook:
   - Yealink: `yealink_<MAC>.cfg`
   - Cisco ATABOX 192: `init.cfg`
   - Fasttel FT600: `fasttel_ft600_<MAC>.xml`
+
+## Installatie
+
+Bij een lege database kun je nu direct `install.php` openen:
+
+1. Alle nog niet uitgevoerde SQL-bestanden in `migrations/` worden in volgorde uitgevoerd.
+2. `schema_migrations` wordt automatisch bijgehouden.
+3. Standaard device types worden idempotent gesynchroniseerd.
+4. Je maakt eenmalig de eerste admin aan via het formulier in `install.php`.
+5. Na succesvolle installatie toont `install.php` een successtatus met een link naar `login.php`.
+6. De installer zet een lock via `settings.installed_at` en een fallback-bestand `settings/.installed`.
+
+Voor een bewuste reset in development: verwijder de `installed_at` rij uit `settings` en verwijder `settings/.installed`.
+
+De CLI-scripts blijven beschikbaar en idempotent:
+
+```bash
+php setup/run_migrations.php
+php seed.php
+```
