@@ -6,10 +6,18 @@ require_once __DIR__ . '/includes/i18n.php';
 
 // Fetch settings helper
 function get_setting($pdo, $key, $default = '') {
-    $stmt = $pdo->prepare('SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1');
-    $stmt->execute([$key]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $row ? $row['setting_value'] : $default;
+    try {
+        $stmt = $pdo->prepare('SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1');
+        $stmt->execute([$key]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? $row['setting_value'] : $default;
+    } catch (PDOException $e) {
+        if ($e->getCode() === '42S02') {
+            error_log('Settings table missing while loading setting ' . $key . ': ' . $e->getMessage());
+            return $default;
+        }
+        throw $e;
+    }
 }
 
 // If logged in get admin info

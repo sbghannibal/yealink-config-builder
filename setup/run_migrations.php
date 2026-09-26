@@ -45,11 +45,10 @@ try {
     die("ERROR: Could not connect to database: " . $e->getMessage() . "\n");
 }
 
-// Find all migration files
-$migration_dir = __DIR__ . '/migrations';
+// Find all migration files (repository-level migrations directory)
+$migration_dir = __DIR__ . '/../migrations';
 if (!is_dir($migration_dir)) {
-    mkdir($migration_dir, 0755, true);
-    echo "Created migrations directory: $migration_dir\n";
+    die("ERROR: migrations directory not found at: $migration_dir\n");
 }
 
 $migration_files = glob($migration_dir . '/*.sql');
