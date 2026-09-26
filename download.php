@@ -63,9 +63,11 @@ if (empty($token)) {
 try {
     // Fetch and validate token
     $stmt = $pdo->prepare('
-        SELECT dt.*, cv.config_content, cv.pabx_id, cv.device_type_id, cv.id as config_version_id
+        SELECT dt.*, cv.config_content, cv.pabx_id, cv.device_type_id, cv.id as config_version_id,
+               dvt.type_name AS device_type_name
         FROM download_tokens dt
         JOIN config_versions cv ON dt.config_version_id = cv.id
+        LEFT JOIN device_types dvt ON cv.device_type_id = dvt.id
         WHERE dt.token = ? AND dt.expires_at > NOW()
         LIMIT 1
     ');
@@ -131,24 +133,24 @@ try {
 
     // Generate config
     if ($device_id) {
-        // Generate device-specific config with ACTIVE config
         $result = generate_device_config($pdo, $device_id, $config_version_id);
     } else {
-        // Use raw config with global variables only
         $stmt = $pdo->query('SELECT var_name, var_value FROM variables');
         $variables = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+        $output_profile = get_device_output_profile($token_data['device_type_name'] ?? null, $mac);
 
-        // Add MAC if provided
         if (!empty($mac)) {
             $variables['DEVICE_MAC'] = $mac;
         }
 
+        $variables = normalize_template_variables($variables, $output_profile['format']);
         $content = apply_variables_to_content($config_data['config_content'], $variables);
-        $content = apply_yealink_formatting($content);
+        $content = format_generated_config($content, $output_profile['format']);
 
         $result = [
             'success' => true,
-            'content' => $content
+            'content' => $content,
+            'output_profile' => $output_profile,
         ];
     }
 
@@ -167,20 +169,10 @@ try {
     // Log download
     log_download($pdo, $config_version_id, $device_id, $mac, true);
 
-    // Generate filename
-    $filename = 'yealink';
-    if (!empty($mac)) {
-        // Format: yealink_AABBCCDDEEFF.cfg
-        $mac_clean = strtoupper(str_replace([':', '-', '.'], '', $mac));
-        $filename = 'yealink_' . $mac_clean;
-    } elseif (!empty($token_data['device_model'])) {
-        $filename = 'yealink_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $token_data['device_model']);
-    }
-    $filename .= '.cfg';
+    $output_profile = $result['output_profile'] ?? get_device_output_profile($token_data['device_type_name'] ?? null, $mac);
 
-    // Send headers for .cfg file download
-    header('Content-Type: text/plain; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Type: ' . $output_profile['content_type']);
+    header('Content-Disposition: attachment; filename="' . $output_profile['filename'] . '"');
     header('Content-Length: ' . strlen($result['content']));
     header('Cache-Control: no-cache, must-revalidate');
     header('Pragma: no-cache');

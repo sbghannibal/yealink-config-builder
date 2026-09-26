@@ -5,6 +5,7 @@ ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/provision_error.log');
 
 require_once __DIR__ . '/../settings/database.php';
+require_once __DIR__ . '/../settings/generator.php';
 
 error_log("=== PROVISION REQUEST START ===");
 error_log("REQUEST_URI: " . $_SERVER['REQUEST_URI']);
@@ -153,19 +154,6 @@ $attempt = [
     'config_version_id'  => null,
 ];
 
-// Security: Only allow Yealink devices
-$is_yealink = stripos($user_agent, 'Yealink') !== false;
-
-error_log("Is Yealink: " . ($is_yealink ? 'YES' : 'NO'));
-
-if (!$is_yealink) {
-    error_log("Non-Yealink device blocked");
-    $attempt['status'] = 'blocked_user_agent';
-    log_provision_attempt($pdo, $attempt);
-    http_response_code(403);
-    exit('Access denied');
-}
-
 // Get MAC address from request
 $mac        = null;
 $mac_source = 'none';
@@ -216,10 +204,14 @@ try {
 
     // Find device by MAC and get ACTIVE config version (FIXED)
     $stmt = $pdo->prepare('
-        SELECT d.*, cv.id as config_version_id, cv.config_content
+        SELECT d.*, dt.type_name AS device_type_name, cv.id as config_version_id,
+               cv.config_content, cv.pabx_id,
+               p.pabx_name, p.pabx_ip, p.pabx_port, p.pabx_type
         FROM devices d
+        LEFT JOIN device_types dt ON d.device_type_id = dt.id
         LEFT JOIN device_config_assignments dca ON d.id = dca.device_id AND dca.is_active = 1
         LEFT JOIN config_versions cv ON dca.config_version_id = cv.id
+        LEFT JOIN pabx p ON cv.pabx_id = p.id
         WHERE d.mac_address = ? AND d.is_active = 1
         LIMIT 1
     ');
@@ -239,6 +231,18 @@ try {
     $attempt['device_id'] = (int) $device['id'];
     error_log("Device ID: " . $device['id']);
     error_log("Config version ID: " . ($device['config_version_id'] ?? 'NONE'));
+
+    $requires_yealink_agent = requires_yealink_user_agent($device['device_type_name'] ?? '');
+    $is_yealink = stripos($user_agent, 'Yealink') !== false;
+    error_log("Requires Yealink UA: " . ($requires_yealink_agent ? 'YES' : 'NO') . ", Is Yealink: " . ($is_yealink ? 'YES' : 'NO'));
+
+    if ($requires_yealink_agent && !$is_yealink) {
+        error_log("Provisioning blocked by user agent policy");
+        $attempt['status'] = 'blocked_user_agent';
+        log_provision_attempt($pdo, $attempt);
+        http_response_code(403);
+        exit('Access denied');
+    }
 
     if (!$device['config_version_id']) {
         error_log("No ACTIVE config version assigned");
@@ -276,10 +280,17 @@ try {
         exit('Not found');
     }
 
-    // Return config file
-    header('Content-Type: text/plain; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . strtolower($mac) . '.cfg"');
-    echo $device['config_content'];
+    $output_profile = get_device_output_profile($device['device_type_name'] ?? '', $device['mac_address'] ?? $mac);
+    $config_variables = normalize_template_variables(
+        build_device_template_variables($device, $device),
+        $output_profile['format']
+    );
+    $config_content = apply_variables_to_content($device['config_content'], $config_variables);
+    $config_content = format_generated_config($config_content, $output_profile['format']);
+
+    header('Content-Type: ' . $output_profile['content_type']);
+    header('Content-Disposition: attachment; filename="' . $output_profile['filename'] . '"');
+    echo $config_content;
 
     error_log("=== PROVISION REQUEST SUCCESS - Config version {$device['config_version_id']} ===");
 

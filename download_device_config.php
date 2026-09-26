@@ -102,33 +102,18 @@ try {
     error_log("Config content retrieved, length: " . strlen($config_data['config_content']));
 
     $config_content = $config_data['config_content'];
-
-    // Apply device-specific variables to the config
-    // Remove colons from MAC for some variables
-    $mac_no_colons = str_replace(':', '', $device['mac_address']);
-
-    $device_variables = [
-        'DEVICE_NAME' => $device['device_name'] ?? '',
-        'DEVICE_MAC' => $mac_no_colons,
-        'DEVICE_IP' => $device['ip_address'] ?? '',
-        'DEVICE_MODEL' => $device['model_name'] ?? '',
-    ];
-
-    // Add PABX variables if available
-    if ($config_data['pabx_id']) {
-        $device_variables['PABX_NAME'] = $config_data['pabx_name'] ?? '';
-        $device_variables['PABX_IP'] = $config_data['pabx_ip'] ?? '';
-        $device_variables['PABX_PORT'] = $config_data['pabx_port'] ?? '';
-        $device_variables['PABX_TYPE'] = $config_data['pabx_type'] ?? '';
-    }
+    $mac_no_colons = strtoupper(str_replace(':', '', $device['mac_address']));
+    $output_profile = get_device_output_profile($device['model_name'] ?? '', $device['mac_address'] ?? '');
+    $device['device_type_name'] = $device['model_name'] ?? '';
+    $device_variables = normalize_template_variables(
+        build_device_template_variables($device, $config_data),
+        $output_profile['format']
+    );
 
     error_log("Applying variables and formatting...");
 
-    // Apply variables to config content
     $config_content = apply_variables_to_content($config_content, $device_variables);
-
-    // Apply Yealink formatting
-    $config_content = apply_yealink_formatting($config_content);
+    $config_content = format_generated_config($config_content, $output_profile['format']);
 
     error_log("Config prepared, sending download...");
 
@@ -152,12 +137,9 @@ try {
         // Don't fail the download if audit fails
     }
 
-    // Generate filename
-    $filename = 'yealink_' . $mac_no_colons . '.cfg';
-
     // Send as download
-    header('Content-Type: text/plain; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Type: ' . $output_profile['content_type']);
+    header('Content-Disposition: attachment; filename="' . $output_profile['filename'] . '"');
     header('Content-Length: ' . strlen($config_content));
     header('Cache-Control: no-cache, must-revalidate');
     header('Pragma: no-cache');
