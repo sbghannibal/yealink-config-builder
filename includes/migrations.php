@@ -208,6 +208,30 @@ function split_sql_statements(string $sql): array
     return $statements;
 }
 
+/**
+ * Execute one migration statement and fully consume every result set.
+ *
+ * MySQL statements such as EXECUTE may return a result set (for example when a
+ * prepared fallback statement is SELECT ...). Leaving that result open causes
+ * the next statement to fail with SQLSTATE HY000/2014, even when the caller is
+ * otherwise executing statements sequentially.
+ */
+function execute_migration_statement(PDO $pdo, string $sql): void
+{
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute();
+
+    try {
+        do {
+            if ($stmt->columnCount() > 0) {
+                $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        } while ($stmt->nextRowset());
+    } finally {
+        $stmt->closeCursor();
+    }
+}
+
 function run_pending_migrations(PDO $pdo, string $dir): array
 {
     ensure_schema_migrations_table($pdo);
@@ -281,7 +305,7 @@ function run_pending_migrations(PDO $pdo, string $dir): array
 
             foreach ($statements as $statement) {
                 try {
-                    $pdo->exec($statement);
+                    execute_migration_statement($pdo, $statement);
                 } catch (PDOException $e) {
                     if (!is_tolerated_migration_error($e)) {
                         $fileResult['errors'][] = $e->getMessage();
