@@ -142,6 +142,8 @@ $formError = '';
 $adminCreated = false;
 $adminExists = false;
 $locked = false;
+$installerLockedState = false;
+$canManageInstall = false;
 $runMigrationsAllowed = false;
 $migrationFailures = false;
 $maskedPost = [
@@ -161,16 +163,22 @@ if ($pdo instanceof PDO) {
     $currentAdminId = isset($_SESSION['admin_id']) ? (int) $_SESSION['admin_id'] : 0;
     if ($currentAdminId > 0) {
         try {
-            $runMigrationsAllowed = has_permission($pdo, $currentAdminId, 'admin.settings.edit')
+            $canManageInstall = has_permission($pdo, $currentAdminId, 'admin.settings.edit');
+            $runMigrationsAllowed = $canManageInstall
                 && $_SERVER['REQUEST_METHOD'] === 'POST'
                 && (($_POST['action'] ?? '') === 'run_migrations')
                 && hash_equals($csrf, (string) ($_POST['csrf_token'] ?? ''));
         } catch (Throwable $e) {
+            $canManageInstall = false;
             $runMigrationsAllowed = false;
         }
     }
 
-    if ($adminExists && !$runMigrationsAllowed) {
+    if ($locked && !$runMigrationsAllowed) {
+        $installerLockedState = true;
+    }
+
+    if ($adminExists && !$runMigrationsAllowed && !$canManageInstall) {
         if (isset($_SESSION['admin_id'])) {
             header('Location: index.php');
         } else {
@@ -179,31 +187,42 @@ if ($pdo instanceof PDO) {
         exit;
     }
 
-    try {
-        $migrationResults = run_pending_migrations($pdo, __DIR__ . '/migrations');
-    } catch (Throwable $e) {
-        $migrationResults[] = [
-            'filename' => 'migration_runner',
-            'status' => 'failed',
-            'statements' => 0,
-            'errors' => [$e->getMessage()],
-        ];
-    }
+    $shouldRunMigrations = !$installerLockedState && (!$adminExists || $runMigrationsAllowed);
 
-    foreach ($migrationResults as $migrationResult) {
-        if (($migrationResult['status'] ?? '') === 'failed') {
-            $migrationFailures = true;
-            break;
+    if ($shouldRunMigrations) {
+        try {
+            $migrationResults = run_pending_migrations($pdo, __DIR__ . '/migrations');
+        } catch (Throwable $e) {
+            $migrationResults[] = [
+                'filename' => 'migration_runner',
+                'status' => 'failed',
+                'statements' => 0,
+                'errors' => [$e->getMessage()],
+            ];
+        }
+
+        foreach ($migrationResults as $migrationResult) {
+            if (($migrationResult['status'] ?? '') === 'failed') {
+                $migrationFailures = true;
+                break;
+            }
+        }
+
+        if (!$migrationFailures) {
+            try {
+                $deviceTypeSeedResult = seed_default_device_types($pdo);
+            } catch (Throwable $e) {
+                $deviceTypeSeedResult = ['status' => 'failed', 'error' => $e->getMessage(), 'seeded' => 0, 'total' => 0];
+            }
         }
     }
 
-    try {
-        $deviceTypeSeedResult = seed_default_device_types($pdo);
-    } catch (Throwable $e) {
-        $deviceTypeSeedResult = ['status' => 'failed', 'error' => $e->getMessage(), 'seeded' => 0, 'total' => 0];
-    }
-
-    if (!$adminExists && !$migrationFailures && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($installerLockedState) {
+        $seedResult = [
+            'status' => 'locked',
+            'message' => 'Installer is locked. Remove lock markers only for intentional development reset.',
+        ];
+    } elseif (!$adminExists && !$migrationFailures && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $postedToken = $_POST['csrf_token'] ?? '';
         $username = trim((string) ($_POST['username'] ?? ''));
         $email = trim((string) ($_POST['email'] ?? ''));
@@ -364,7 +383,7 @@ $csrfToken = $_SESSION['csrf_token'] ?? '';
                 <p>Complete migrations and create an admin to finish installation.</p>
             <?php endif; ?>
 
-            <?php if (isset($_SESSION['admin_id'])): ?>
+            <?php if ($canManageInstall): ?>
                 <p style="margin-top:10px;">
                     <form method="post" style="display:inline;">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8'); ?>">

@@ -261,7 +261,7 @@ function run_pending_migrations(PDO $pdo, string $dir): array
             }
             $hasExplicitTransactionControl = false;
             foreach ($statements as $statement) {
-                if (preg_match('/^\s*(start\s+transaction|commit|rollback)\b/i', $statement) === 1) {
+                if (preg_match('/^\s*(start\s+transaction|commit|rollback|lock\s+tables|unlock\s+tables)\b/i', $statement) === 1) {
                     $hasExplicitTransactionControl = true;
                     break;
                 }
