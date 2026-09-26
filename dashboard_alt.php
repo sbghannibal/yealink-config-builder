@@ -11,9 +11,12 @@ function get_setting($pdo, $key, $default = '') {
         $stmt->execute([$key]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ? $row['setting_value'] : $default;
-    } catch (Exception $e) {
-        error_log('Error loading setting ' . $key . ': ' . $e->getMessage());
-        return $default;
+    } catch (PDOException $e) {
+        if ($e->getCode() === '42S02') {
+            error_log('Settings table missing while loading setting ' . $key . ': ' . $e->getMessage());
+            return $default;
+        }
+        throw $e;
     }
 }
 

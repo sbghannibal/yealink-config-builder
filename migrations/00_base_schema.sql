@@ -26,12 +26,12 @@ CREATE TABLE IF NOT EXISTS `admins` (
 
 CREATE TABLE IF NOT EXISTS `roles` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `role_name` VARCHAR(64) DEFAULT NULL,
+  `role_name` VARCHAR(64) NOT NULL,
   `name` VARCHAR(64) DEFAULT NULL,
   `description` TEXT DEFAULT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY `uq_roles_role_name` (`role_name`),
-  UNIQUE KEY `uq_roles_name` (`name`)
+  KEY `idx_roles_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `admin_roles` (
