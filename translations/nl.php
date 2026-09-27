@@ -28,7 +28,7 @@ return [
     'nav.staging_credentials' => 'Credentials',
     'nav.copy_variables'      => 'Variabelen Kopiëren',
     'nav.restore_devices'     => 'Verwijderde Apparaten',
-    'nav.device_info'         => 'Device Info',
+    'nav.device_info'         => 'Apparaat Info',
 
     // Buttons
     'button.save'    => 'Opslaan',
