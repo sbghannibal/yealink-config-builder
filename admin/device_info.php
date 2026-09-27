@@ -1,9 +1,9 @@
 <?php
-$page_title = __('page.device_info.title');
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/../settings/database.php';
 require_once __DIR__ . '/../includes/rbac.php';
 require_once __DIR__ . '/../includes/i18n.php';
+$page_title = __('page.device_info.title');
 
 if (!isset($_SESSION['admin_id'])) {
     header('Location: /login.php');
@@ -28,7 +28,7 @@ require_once __DIR__ . '/_header.php';
         <p><?php echo __('page.device_info.yealink.description'); ?></p>
         <ul>
             <li><strong><?php echo __('label.provision_file'); ?>:</strong> yealink_&lt;MAC&gt;.cfg</li>
-            <li><strong><?php echo __('label.use_for'); ?>:</strong> T4x, T5x, W-series, CP-series devices</li>
+            <li><strong><?php echo __('label.use_for'); ?>:</strong> <?php echo __('page.device_info.yealink.use_for'); ?></li>
             <li><a href="https://support.yealink.com/" target="_blank" rel="noopener noreferrer"><?php echo __('page.device_info.link.vendor_support'); ?></a></li>
             <li><a href="https://manuals.plus/yealink/auto-provisioning-manual" target="_blank" rel="noopener noreferrer"><?php echo __('page.device_info.link.provisioning_guide'); ?></a></li>
         </ul>
@@ -39,7 +39,7 @@ require_once __DIR__ . '/_header.php';
         <p><?php echo __('page.device_info.cisco.description'); ?></p>
         <ul>
             <li><strong><?php echo __('label.provision_file'); ?>:</strong> init.cfg</li>
-            <li><strong><?php echo __('label.use_for'); ?>:</strong> 2x FXS ATA endpoints and analog phones</li>
+            <li><strong><?php echo __('label.use_for'); ?>:</strong> <?php echo __('page.device_info.cisco.use_for'); ?></li>
             <li><a href="https://www.cisco.com/c/en/us/support/collaboration-endpoints/ata-190-series-adapter/model.html" target="_blank" rel="noopener noreferrer"><?php echo __('page.device_info.link.vendor_support'); ?></a></li>
             <li><a href="https://www.cisco.com/c/en/us/td/docs/voice_ip_comm/cata/19x/3-2/english/administration/guide/ata19x_admin_book/ata19x_introduction.html" target="_blank" rel="noopener noreferrer"><?php echo __('page.device_info.link.admin_guide'); ?></a></li>
         </ul>
@@ -50,7 +50,7 @@ require_once __DIR__ . '/_header.php';
         <p><?php echo __('page.device_info.fasttell.description'); ?></p>
         <ul>
             <li><strong><?php echo __('label.provision_file'); ?>:</strong> fasttel_ft600_&lt;MAC&gt;.xml</li>
-            <li><strong><?php echo __('label.use_for'); ?>:</strong> SIP door intercom use cases</li>
+            <li><strong><?php echo __('label.use_for'); ?>:</strong> <?php echo __('page.device_info.fasttell.use_for'); ?></li>
             <li><a href="https://www.fasttel.com/" target="_blank" rel="noopener noreferrer"><?php echo __('page.device_info.link.vendor_site'); ?></a></li>
             <li><a href="https://www.fasttel.com/support/" target="_blank" rel="noopener noreferrer"><?php echo __('page.device_info.link.vendor_support'); ?></a></li>
         </ul>
