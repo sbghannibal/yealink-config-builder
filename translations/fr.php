@@ -28,6 +28,7 @@ return [
     'nav.staging_credentials' => 'Identifiants',
     'nav.copy_variables'      => 'Copier les variables',
     'nav.restore_devices'     => 'Appareils Supprimés',
+    'nav.device_info'         => 'Infos appareils',
 
     // Buttons
     'button.save'    => 'Enregistrer',
@@ -159,6 +160,22 @@ return [
     'page.create.title'              => 'Créer une config',
     'page.staging_certificates.title' => 'Certificats de staging',
     'page.staging_credentials.title'  => 'Identifiants de staging',
+    'page.device_info.title'          => 'Informations Appareils',
+    'page.device_info.heading'        => 'Informations sur les appareils pris en charge',
+    'page.device_info.intro'          => 'Liens de référence et détails de provisioning pour les appareils pris en charge.',
+    'page.device_info.yealink.title'       => 'Téléphones Yealink',
+    'page.device_info.yealink.description' => 'Les téléphones Yealink et terminaux DECT sont provisionnés avec des fichiers CFG générés.',
+    'page.device_info.cisco.title'       => 'Cisco ATA 192',
+    'page.device_info.cisco.description' => 'Les endpoints Cisco ATA 192 utilisent une logique de provisioning Cisco avec un fichier init.cfg fixe.',
+    'page.device_info.fasttell.title'       => 'Portiers Fasttell',
+    'page.device_info.fasttell.description' => 'Les portiers Fasttell utilisent une sortie XML pour les déploiements interphone SIP.',
+    'page.device_info.internal_links_title' => 'Pages de configuration associées',
+    'page.device_info.link.vendor_support'   => 'Portail support du constructeur',
+    'page.device_info.link.vendor_site'      => 'Site du constructeur',
+    'page.device_info.link.provisioning_guide' => 'Guide d\'auto-provisioning',
+    'page.device_info.link.admin_guide'      => 'Guide administrateur',
+    'label.provision_file' => 'Fichier de provisioning',
+    'label.use_for'        => 'Utiliser pour',
 
     // Messages
     'message.user_created'           => 'Utilisateur créé avec succès',

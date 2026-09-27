@@ -374,6 +374,12 @@ function can_access($permission, $permission_map) {
             📱 <?php echo __('nav.devices'); ?>
         </a>
 
+        <?php if (can_access('devices.view', $permission_map)): ?>
+        <a href="/admin/device_info.php" class="<?php echo $current_page === 'device_info.php' ? 'active' : ''; ?>">
+            ℹ️ <?php echo __('nav.device_info'); ?>
+        </a>
+        <?php endif; ?>
+
         <!-- RESTORE DELETED DEVICES (Owner/Expert only) -->
         <?php if (has_permission($pdo, $admin_id, 'devices.restore')): ?>
         <a href="/admin/devices_restore.php" class="<?php echo $current_page === 'devices_restore.php' ? 'active' : ''; ?>">

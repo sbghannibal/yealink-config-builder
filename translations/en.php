@@ -28,6 +28,7 @@ return [
     'nav.staging_credentials' => 'Credentials',
     'nav.copy_variables'      => 'Copy Variables',
     'nav.restore_devices'     => 'Restore Deleted Devices',
+    'nav.device_info'         => 'Device Info',
 
     // Buttons
     'button.save'    => 'Save',
@@ -159,6 +160,22 @@ return [
     'page.create.title'              => 'Create Config',
     'page.staging_certificates.title' => 'Staging Certificates',
     'page.staging_credentials.title'  => 'Staging Credentials',
+    'page.device_info.title'          => 'Device Information',
+    'page.device_info.heading'        => 'Supported Device Information',
+    'page.device_info.intro'          => 'Reference links and provisioning details for supported devices.',
+    'page.device_info.yealink.title'       => 'Yealink Phones',
+    'page.device_info.yealink.description' => 'Yealink desk phones and DECT endpoints are provisioned with generated CFG files.',
+    'page.device_info.cisco.title'       => 'Cisco ATA 192',
+    'page.device_info.cisco.description' => 'Cisco ATA 192 endpoints use Cisco provisioning logic with a fixed init.cfg filename.',
+    'page.device_info.fasttell.title'       => 'Fasttell Door Phones',
+    'page.device_info.fasttell.description' => 'Fasttell door phones use XML provisioning output for SIP intercom deployments.',
+    'page.device_info.internal_links_title' => 'Related Configuration Pages',
+    'page.device_info.link.vendor_support'   => 'Vendor support portal',
+    'page.device_info.link.vendor_site'      => 'Vendor website',
+    'page.device_info.link.provisioning_guide' => 'Auto provisioning guide',
+    'page.device_info.link.admin_guide'      => 'Administrator guide',
+    'label.provision_file' => 'Provisioning file',
+    'label.use_for'        => 'Use for',
 
     // Messages
     'message.user_created'           => 'User created successfully',

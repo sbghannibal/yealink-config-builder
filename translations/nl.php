@@ -28,6 +28,7 @@ return [
     'nav.staging_credentials' => 'Credentials',
     'nav.copy_variables'      => 'Variabelen Kopiëren',
     'nav.restore_devices'     => 'Verwijderde Apparaten',
+    'nav.device_info'         => 'Device Info',
 
     // Buttons
     'button.save'    => 'Opslaan',
@@ -159,6 +160,22 @@ return [
     'page.create.title'              => 'Config aanmaken',
     'page.staging_certificates.title' => 'Staging certificaten',
     'page.staging_credentials.title'  => 'Staging inloggegevens',
+    'page.device_info.title'          => 'Device Informatie',
+    'page.device_info.heading'        => 'Informatie over ondersteunde devices',
+    'page.device_info.intro'          => 'Referentielinks en provisioningdetails voor ondersteunde devices.',
+    'page.device_info.yealink.title'       => 'Yealink Phones',
+    'page.device_info.yealink.description' => 'Yealink deskphones en DECT-endpoints worden geprovisioned met gegenereerde CFG-bestanden.',
+    'page.device_info.cisco.title'       => 'Cisco ATA 192',
+    'page.device_info.cisco.description' => 'Cisco ATA 192-endpoints gebruiken Cisco-provisioning met een vaste bestandsnaam init.cfg.',
+    'page.device_info.fasttell.title'       => 'Fasttell Door Phones',
+    'page.device_info.fasttell.description' => 'Fasttell deurtelefoons gebruiken XML-provisioningoutput voor SIP-intercomtoepassingen.',
+    'page.device_info.internal_links_title' => 'Gerelateerde Configuratiepagina\'s',
+    'page.device_info.link.vendor_support'   => 'Vendor support portal',
+    'page.device_info.link.vendor_site'      => 'Vendor website',
+    'page.device_info.link.provisioning_guide' => 'Auto provisioning guide',
+    'page.device_info.link.admin_guide'      => 'Administrator guide',
+    'label.provision_file' => 'Provisioningbestand',
+    'label.use_for'        => 'Te gebruiken voor',
 
     // Messages
     'message.user_created'           => 'Gebruiker succesvol aangemaakt',
