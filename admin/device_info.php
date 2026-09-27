@@ -11,8 +11,13 @@ if (!isset($_SESSION['admin_id'])) {
 }
 $admin_id = (int) $_SESSION['admin_id'];
 $permissions = get_admin_permissions($pdo, $admin_id);
+$permission_map = array_flip($permissions);
 
-if (!in_array('devices.view', $permissions, true)) {
+function can_access_local(string $permission, array $permission_map): bool {
+    return isset($permission_map[$permission]);
+}
+
+if (!can_access_local('devices.view', $permission_map)) {
     header('Location: /access_denied.php');
     exit;
 }
@@ -60,8 +65,8 @@ require_once __DIR__ . '/_header.php';
     </div>
 
     <?php
-    $can_manage_device_types = has_permission($pdo, $admin_id, 'admin.device_types.manage');
-    $can_manage_templates = has_permission($pdo, $admin_id, 'config.manage');
+    $can_manage_device_types = can_access_local('admin.device_types.manage', $permission_map);
+    $can_manage_templates = can_access_local('config.manage', $permission_map);
     ?>
     <?php if ($can_manage_device_types || $can_manage_templates): ?>
         <div class="card">
