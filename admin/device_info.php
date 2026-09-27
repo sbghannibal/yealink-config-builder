@@ -19,10 +19,15 @@ if (!has_permission($pdo, $admin_id, 'devices.view')) {
 require_once __DIR__ . '/_header.php';
 ?>
 
-    <h2><?php echo __('page.device_info.heading'); ?></h2>
-    <p style="margin-bottom:20px;color:#555;"><?php echo __('page.device_info.intro'); ?></p>
+    <style>
+        .device-info-intro { margin-bottom: 20px; color: #555; }
+        .device-info-card { margin-bottom: 20px; }
+    </style>
 
-    <div class="card" style="margin-bottom:20px;">
+    <h2><?php echo __('page.device_info.heading'); ?></h2>
+    <p class="device-info-intro"><?php echo __('page.device_info.intro'); ?></p>
+
+    <div class="card device-info-card">
         <h3>📱 <?php echo __('page.device_info.yealink.title'); ?></h3>
         <p><?php echo __('page.device_info.yealink.description'); ?></p>
         <ul>
@@ -33,7 +38,7 @@ require_once __DIR__ . '/_header.php';
         </ul>
     </div>
 
-    <div class="card" style="margin-bottom:20px;">
+    <div class="card device-info-card">
         <h3>☎️ <?php echo __('page.device_info.cisco.title'); ?></h3>
         <p><?php echo __('page.device_info.cisco.description'); ?></p>
         <ul>
@@ -44,7 +49,7 @@ require_once __DIR__ . '/_header.php';
         </ul>
     </div>
 
-    <div class="card" style="margin-bottom:20px;">
+    <div class="card device-info-card">
         <h3>🚪 <?php echo __('page.device_info.fasttell.title'); ?></h3>
         <p><?php echo __('page.device_info.fasttell.description'); ?></p>
         <ul>
