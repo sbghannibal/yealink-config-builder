@@ -181,7 +181,7 @@ return [
     'page.device_info.link.provisioning_guide' => 'Provisioning guide (community mirror)',
     'page.device_info.link.admin_guide'      => 'Administrator guide',
     'label.provision_file' => 'Provisioningbestand',
-    'label.use_for'        => 'Te gebruiken voor',
+    'label.use_for'        => 'Geschikt voor',
 
     // Messages
     'message.user_created'           => 'Gebruiker succesvol aangemaakt',

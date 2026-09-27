@@ -10,8 +10,9 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 $admin_id = (int) $_SESSION['admin_id'];
+$permissions = get_admin_permissions($pdo, $admin_id);
 
-if (!has_permission($pdo, $admin_id, 'devices.view')) {
+if (!in_array('devices.view', $permissions, true)) {
     header('Location: /access_denied.php');
     exit;
 }

@@ -181,7 +181,7 @@ return [
     'page.device_info.link.provisioning_guide' => 'Guide de provisioning (miroir communautaire)',
     'page.device_info.link.admin_guide'      => 'Guide administrateur',
     'label.provision_file' => 'Fichier de provisioning',
-    'label.use_for'        => 'Utiliser pour',
+    'label.use_for'        => 'Utilisé pour',
 
     // Messages
     'message.user_created'           => 'Utilisateur créé avec succès',

@@ -181,7 +181,7 @@ return [
     'page.device_info.link.provisioning_guide' => 'Provisioning guide (community mirror)',
     'page.device_info.link.admin_guide'      => 'Administrator guide',
     'label.provision_file' => 'Provisioning file',
-    'label.use_for'        => 'Use for',
+    'label.use_for'        => 'Used for',
 
     // Messages
     'message.user_created'           => 'User created successfully',
