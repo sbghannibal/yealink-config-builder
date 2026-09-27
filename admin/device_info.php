@@ -19,16 +19,11 @@ if (!has_permission($pdo, $admin_id, 'devices.view')) {
 require_once __DIR__ . '/_header.php';
 ?>
 
-    <style>
-        .device-info-intro { margin-bottom: 20px; color: #555; }
-        .device-info-card { margin-bottom: 20px; }
-    </style>
-
     <h2><?php echo __('page.device_info.heading'); ?></h2>
-    <p class="device-info-intro"><?php echo __('page.device_info.intro'); ?></p>
+    <p><?php echo __('page.device_info.intro'); ?></p>
 
-    <div class="card device-info-card">
-        <h3>📱 <?php echo __('page.device_info.yealink.title'); ?></h3>
+    <div class="card">
+        <h3><?php echo __('page.device_info.yealink.title'); ?></h3>
         <p><?php echo __('page.device_info.yealink.description'); ?></p>
         <ul>
             <li><strong><?php echo __('label.provision_file'); ?>:</strong> <?php echo __('page.device_info.yealink.provision_file'); ?></li>
@@ -38,8 +33,8 @@ require_once __DIR__ . '/_header.php';
         </ul>
     </div>
 
-    <div class="card device-info-card">
-        <h3>☎️ <?php echo __('page.device_info.cisco.title'); ?></h3>
+    <div class="card">
+        <h3><?php echo __('page.device_info.cisco.title'); ?></h3>
         <p><?php echo __('page.device_info.cisco.description'); ?></p>
         <ul>
             <li><strong><?php echo __('label.provision_file'); ?>:</strong> <?php echo __('page.device_info.cisco.provision_file'); ?></li>
@@ -49,8 +44,8 @@ require_once __DIR__ . '/_header.php';
         </ul>
     </div>
 
-    <div class="card device-info-card">
-        <h3>🚪 <?php echo __('page.device_info.fasttel.title'); ?></h3>
+    <div class="card">
+        <h3><?php echo __('page.device_info.fasttel.title'); ?></h3>
         <p><?php echo __('page.device_info.fasttel.description'); ?></p>
         <ul>
             <li><strong><?php echo __('label.provision_file'); ?>:</strong> <?php echo __('page.device_info.fasttel.provision_file'); ?></li>
@@ -61,9 +56,8 @@ require_once __DIR__ . '/_header.php';
     </div>
 
     <div class="card">
-        <h3>🔗 <?php echo __('page.device_info.internal_links_title'); ?></h3>
+        <h3><?php echo __('page.device_info.internal_links_title'); ?></h3>
         <ul>
-            <li><a href="/settings/device_mapping.php"><?php echo __('nav.device_mapping'); ?></a></li>
             <li><a href="/admin/device_types.php"><?php echo __('nav.device_types'); ?></a></li>
             <li><a href="/admin/templates.php"><?php echo __('nav.templates'); ?></a></li>
         </ul>
