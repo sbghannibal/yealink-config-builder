@@ -175,7 +175,7 @@ return [
     'page.device_info.internal_links_title' => 'Gerelateerde Configuratiepagina\'s',
     'page.device_info.link.vendor_support'   => 'Vendor support portal',
     'page.device_info.link.vendor_site'      => 'Vendor website',
-    'page.device_info.link.provisioning_guide' => 'Auto provisioning guide',
+    'page.device_info.link.provisioning_guide' => 'Provisioning guide (community mirror)',
     'page.device_info.link.admin_guide'      => 'Administrator guide',
     'label.provision_file' => 'Provisioningbestand',
     'label.use_for'        => 'Te gebruiken voor',

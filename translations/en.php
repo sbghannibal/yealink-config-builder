@@ -175,7 +175,7 @@ return [
     'page.device_info.internal_links_title' => 'Related Configuration Pages',
     'page.device_info.link.vendor_support'   => 'Vendor support portal',
     'page.device_info.link.vendor_site'      => 'Vendor website',
-    'page.device_info.link.provisioning_guide' => 'Auto provisioning guide',
+    'page.device_info.link.provisioning_guide' => 'Provisioning guide (community mirror)',
     'page.device_info.link.admin_guide'      => 'Administrator guide',
     'label.provision_file' => 'Provisioning file',
     'label.use_for'        => 'Use for',
