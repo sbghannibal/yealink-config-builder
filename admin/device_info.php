@@ -59,12 +59,22 @@ require_once __DIR__ . '/_header.php';
         </ul>
     </div>
 
-    <div class="card">
-        <h3><?php echo t('page.device_info.internal_links_title'); ?></h3>
-        <ul>
-            <li><a href="/admin/device_types.php"><?php echo t('nav.device_types'); ?></a></li>
-            <li><a href="/admin/templates.php"><?php echo t('nav.templates'); ?></a></li>
-        </ul>
-    </div>
+    <?php
+    $can_manage_device_types = in_array('admin.device_types.manage', $permissions, true);
+    $can_manage_templates = in_array('config.manage', $permissions, true);
+    ?>
+    <?php if ($can_manage_device_types || $can_manage_templates): ?>
+        <div class="card">
+            <h3><?php echo t('page.device_info.internal_links_title'); ?></h3>
+            <ul>
+                <?php if ($can_manage_device_types): ?>
+                    <li><a href="/admin/device_types.php"><?php echo t('nav.device_types'); ?></a></li>
+                <?php endif; ?>
+                <?php if ($can_manage_templates): ?>
+                    <li><a href="/admin/templates.php"><?php echo t('nav.templates'); ?></a></li>
+                <?php endif; ?>
+            </ul>
+        </div>
+    <?php endif; ?>
 
 <?php require_once __DIR__ . '/_footer.php'; ?>
