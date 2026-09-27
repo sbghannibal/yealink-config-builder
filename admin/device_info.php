@@ -50,11 +50,11 @@ require_once __DIR__ . '/_header.php';
     </div>
 
     <div class="card device-info-card">
-        <h3>🚪 <?php echo __('page.device_info.fasttell.title'); ?></h3>
-        <p><?php echo __('page.device_info.fasttell.description'); ?></p>
+        <h3>🚪 <?php echo __('page.device_info.fasttel.title'); ?></h3>
+        <p><?php echo __('page.device_info.fasttel.description'); ?></p>
         <ul>
             <li><strong><?php echo __('label.provision_file'); ?>:</strong> fasttel_ft600_&lt;MAC&gt;.xml</li>
-            <li><strong><?php echo __('label.use_for'); ?>:</strong> <?php echo __('page.device_info.fasttell.use_for'); ?></li>
+            <li><strong><?php echo __('label.use_for'); ?>:</strong> <?php echo __('page.device_info.fasttel.use_for'); ?></li>
             <li><a href="https://www.fasttel.com/" target="_blank" rel="noopener noreferrer"><?php echo __('page.device_info.link.vendor_site'); ?></a></li>
             <li><a href="https://www.fasttel.com/support/" target="_blank" rel="noopener noreferrer"><?php echo __('page.device_info.link.vendor_support'); ?></a></li>
         </ul>
