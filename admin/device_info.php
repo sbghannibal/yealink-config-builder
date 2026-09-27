@@ -60,8 +60,8 @@ require_once __DIR__ . '/_header.php';
     </div>
 
     <?php
-    $can_manage_device_types = in_array('admin.device_types.manage', $permissions, true);
-    $can_manage_templates = in_array('config.manage', $permissions, true);
+    $can_manage_device_types = has_permission($pdo, $admin_id, 'admin.device_types.manage');
+    $can_manage_templates = has_permission($pdo, $admin_id, 'config.manage');
     ?>
     <?php if ($can_manage_device_types || $can_manage_templates): ?>
         <div class="card">
