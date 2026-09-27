@@ -29,7 +29,6 @@ require_once __DIR__ . '/_header.php';
             <li><strong><?php echo __('label.provision_file'); ?>:</strong> <?php echo __('page.device_info.yealink.provision_file'); ?></li>
             <li><strong><?php echo __('label.use_for'); ?>:</strong> <?php echo __('page.device_info.yealink.use_for'); ?></li>
             <li><a href="https://support.yealink.com/" target="_blank" rel="noopener noreferrer"><?php echo __('page.device_info.link.vendor_support'); ?></a></li>
-            <li><a href="https://manuals.plus/yealink/auto-provisioning-manual" target="_blank" rel="noopener noreferrer"><?php echo __('page.device_info.link.provisioning_guide'); ?></a></li>
         </ul>
     </div>
 
