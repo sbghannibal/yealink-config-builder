@@ -147,6 +147,52 @@ massupdate_test(massupdate_admit($pdo, $parsed, new DateTimeImmutable('2026-03-3
 massupdate_test(massupdate_admit($pdo, $second, new DateTimeImmutable('2026-03-30T08:00:00+02:00')) === null, 'new period unique quota enforced');
 massupdate_test(massupdate_admit($pdo, array_replace($parsed, ['version' => '66.86.0.20']), $now) === null, 'updated admitted device has no output');
 massupdate_test(!$pdo->inTransaction(), 'all normal admissions close transactions');
+massupdate_test(str_starts_with((string)massupdate_admit($pdo, $parsed, $now), "#!version:1.0.0.1\n"), 'config first line is #!version:1.0.0.1');
+
+$connects = 0;
+$connect = static function () use ($pdo, &$connects): PDO {
+    $connects++;
+    return $pdo;
+};
+$w70bUa = 'Yealink W70B 146.87.188.1 24:9a:d8:66:77:32';
+foreach (['GET', 'HEAD'] as $method) {
+    foreach (['/massupdate/249ad8667732.boot', '/massupdate/249ad8667732.enc', '/massupdate/unknown.cfg', '/massupdate/index.php/unknown'] as $uri) {
+        $before = $count();
+        massupdate_test(massupdate_respond($method, $uri, [], $w70bUa, $connect, $now) === [404, ''] && $connects === 0 && $count() === $before,
+            $method . ' ' . $uri . ' returns 404 without database access');
+    }
+}
+$before = $count();
+massupdate_test(massupdate_respond('HEAD', '/massupdate/001122aabbcc.cfg', [], $ua, $connect, $now) === [204, ''] && $connects === 0 && $count() === $before,
+    'supported HEAD returns 204 without body, database access or quota');
+massupdate_test(massupdate_respond('POST', '/massupdate/001122aabbcc.cfg', [], $ua, $connect, $now) === [405, ''] && $connects === 0, 'unsupported method returns 405');
+massupdate_test(massupdate_respond('GET', '/massupdate/249ad8667732.cfg', [], $w70bUa, $connect, $now) === [404, ''] && $connects === 1, 'GET without campaign config returns 404');
+[$status, $body] = massupdate_respond('GET', '/massupdate/001122aabbcc.cfg', [], $ua, $connect, $now);
+massupdate_test($status === 200 && $body === $expected && str_starts_with($body, "#!version:1.0.0.1\n"), 'supported GET returns 200 with firmware-only config');
+$failing = static function (): PDO {
+    throw new RuntimeException('down');
+};
+massupdate_test(massupdate_respond('GET', '/massupdate/001122aabbcc.cfg', [], $ua, $failing, $now) === [503, ''], 'database error returns 503');
+
+$entry = static function (string $method, string $uri): array {
+    $code = '$_SERVER["REQUEST_METHOD"] = ' . var_export($method, true) . '; $_SERVER["REQUEST_URI"] = ' . var_export($uri, true)
+        . '; $_SERVER["HTTP_USER_AGENT"] = "Yealink W70B 146.87.188.1 24:9a:d8:66:77:32"; $_GET = [];'
+        . ' register_shutdown_function(static function () { register_shutdown_function(static function () { fwrite(STDERR, (string)http_response_code()); }); });'
+        . ' require ' . var_export(__DIR__ . '/../massupdate/index.php', true) . ';';
+    $process = proc_open([PHP_BINARY, '-d', 'error_log=/dev/null', '-r', $code], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, null, ['DB_HOST' => '127.0.0.1:1']);
+    $out = stream_get_contents($pipes[1]);
+    $err = stream_get_contents($pipes[2]);
+    proc_close($process);
+    return [$err, $out];
+};
+foreach (['GET', 'HEAD'] as $method) {
+    foreach (['/massupdate/249ad8667732.boot', '/massupdate/249ad8667732.enc'] as $uri) {
+        massupdate_test($entry($method, $uri) === ['404', ''], 'endpoint ' . $method . ' ' . $uri . ' returns empty 404');
+    }
+}
+massupdate_test($entry('PUT', '/massupdate/249ad8667732.cfg') === ['405', ''], 'endpoint PUT returns 405');
+massupdate_test($entry('GET', '/massupdate/249ad8667732.cfg') === ['503', ''], 'endpoint database failure returns empty 503');
+
 $pdo->exec('UPDATE massupdate_campaigns SET firmware_url = "https://firmware.example/a%0aevil" WHERE id = 1');
 try {
     massupdate_admit($pdo, $parsed, $now);
