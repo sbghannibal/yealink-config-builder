@@ -3,6 +3,28 @@
  * English translations (en)
  */
 return [
+    'nav.massupdate' => 'Mass Update',
+    'massupdate.intro' => 'Create one firmware campaign per Yealink model. The configuration contains only the firmware download location; devices are managed by the external platform.',
+    'massupdate.reset' => 'The daily limit applies per campaign and unique MAC address. The counter resets at 08:00 Belgian time (Europe/Brussels), including daylight saving changes. Repeated requests from admitted devices do not use another slot.',
+    'massupdate.priority' => 'First requests are admitted, whether devices are new or already installed. Have new devices request first if they need priority. Devices at the target version or newer, mismatched models and requests beyond the limit receive no update.',
+    'massupdate.route' => 'Configure the external platform with the public provisioning route:',
+    'massupdate.request' => 'Devices must report their model and current firmware in a Yealink User-Agent, and their MAC in the filename, query parameter or User-Agent. No update is offered without these details. These details are not proof of device identity; the limit counts admitted configuration downloads, not confirmed installations.',
+    'massupdate.install' => 'Apply database migrations before deployment:',
+    'massupdate.create' => 'Create firmware campaign',
+    'massupdate.model' => 'Yealink model',
+    'massupdate.version' => 'Target version',
+    'massupdate.url' => 'Firmware download location (HTTP/HTTPS)',
+    'massupdate.limit' => 'Devices per day (1–25000)',
+    'massupdate.active' => 'Active',
+    'massupdate.campaigns' => 'Firmware campaigns',
+    'massupdate.empty' => 'No firmware campaigns yet.',
+    'massupdate.downloaded' => 'Admitted today',
+    'massupdate.delete_warning' => 'Delete this campaign and its counters. Recreating it starts a new allowance.',
+    'massupdate.saved' => 'The firmware campaign has been saved.',
+    'massupdate.csrf_error' => 'Invalid CSRF token. Refresh the page and try again.',
+    'massupdate.invalid' => 'Invalid input. Check the model, numeric firmware version, HTTP/HTTPS location without credentials and daily limit.',
+    'massupdate.save_error' => 'Saving failed. Check whether a campaign already exists for this model and whether migrations have been applied.',
+    'massupdate.load_error' => 'Loading campaigns failed. Check whether database migrations have been applied.',
     // Navigation
     'nav.dashboard'           => 'Dashboard',
     'nav.devices'             => 'Devices',
