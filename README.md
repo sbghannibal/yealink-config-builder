@@ -43,6 +43,19 @@ Ondersteunt naast bestaande Yealink-configuraties nu ook:
   - Cisco ATABOX 192: `init.cfg`
   - Fasttel FT600: `fasttel_ft600_<MAC>.xml`
 
+### Mass Update (`/massupdate/`)
+
+- Ondersteunde URL's (Yealink user-agent met model en firmwareversie verplicht):
+  - `/massupdate/<MAC>.cfg`, bv. `https://example.com/massupdate/249ad8667732.cfg`
+  - `/massupdate/y000000000NNN.cfg` (MAC uit de user-agent)
+  - `/massupdate/?mac=<MAC>` of `/massupdate/index.php?mac=<MAC>`
+- Een geleverde config begint altijd met `#!version:1.0.0.1`, gevolgd door alleen `firmware.url = ...`.
+- HTTP-statussen (altijd zonder body, behalve bij 200):
+  - `200`: config geleverd (GET).
+  - `404`: niet-ondersteunde bestanden (bv. `.boot`, `.enc`), ongeldige aanvragen of geen config beschikbaar (geen/inactieve campagne, al up-to-date, dagquotum bereikt). Niet-ondersteunde bestanden raken de database niet.
+  - `204`: HEAD op een ondersteunde URL. HEAD gebruikt nooit de database en verbruikt nooit quotum.
+  - `405`: andere methodes dan GET/HEAD. `503`: database-/interne fout.
+
 ## Installatie
 
 Bij een lege database kun je nu direct `install.php` openen:

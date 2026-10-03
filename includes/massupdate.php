@@ -156,3 +156,28 @@ function massupdate_admit(PDO $pdo, array $request, DateTimeImmutable $now): ?st
         throw $e;
     }
 }
+
+/**
+ * Resolves the HTTP status and body for a Mass Update request.
+ * Unsupported resources and requests without an available config return 404.
+ * HEAD never connects to the database or consumes quota: supported resources return 204.
+ */
+function massupdate_respond(string $method, string $uri, array $query, string $ua, callable $connect, DateTimeImmutable $now): array
+{
+    if (!in_array($method, ['GET', 'HEAD'], true)) {
+        return [405, ''];
+    }
+    $request = massupdate_parse_request($uri, $query, $ua);
+    if ($request === null) {
+        return [404, ''];
+    }
+    if ($method === 'HEAD') {
+        return [204, ''];
+    }
+    try {
+        $config = massupdate_admit($connect(), $request, $now);
+    } catch (Throwable $e) {
+        return [503, ''];
+    }
+    return $config === null ? [404, ''] : [200, $config];
+}
