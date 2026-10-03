@@ -85,7 +85,16 @@ define('DEFAULT_CUSTOMER_PABX_NAME', 'Customer-Based');
 $builder_path = __DIR__ . '/../settings/builder.php';
 $builder = save_block($builder_path, "if (\$action === 'create_config')");
 $activate = save_block($builder_path, "if (\$action === 'activate_config')");
-$wizard = save_block(__DIR__ . '/../devices/configure_wizard.php', "if (\$action === 'select_customer'");
+$wizard_path = __DIR__ . '/../devices/configure_wizard.php';
+$wizard = save_block($wizard_path, "if (\$action === 'select_customer'");
+$wizard_source = file_get_contents($wizard_path);
+foreach (['assert_device_allowed($pdo, $admin_id, $device_id);', 'assert_customer_allowed($pdo, $admin_id, $customer_id);'] as $guard) {
+    $position = strpos($wizard_source, $guard);
+    assert_test(
+        $position !== false && $position < strpos($wizard_source, '$pdo->beginTransaction();'),
+        'Wizard authorizes before saving: ' . $guard
+    );
+}
 
 $pdo = new ActivationTestPDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

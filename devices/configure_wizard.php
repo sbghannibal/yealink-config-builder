@@ -14,6 +14,7 @@ require_once __DIR__ . '/../settings/database.php';
 require_once __DIR__ . '/../settings/generator.php';
 require_once __DIR__ . '/../settings/validator.php';
 require_once __DIR__ . '/../includes/rbac.php';
+require_once __DIR__ . '/../includes/partner_access.php';
 require_once __DIR__ . '/../includes/form_helpers.php';
 
 // Default PABX name for customer-based configurations
@@ -55,6 +56,9 @@ $step = max(1, min(5, $step)); // Clamp between 1-5
 
 // Get device ID if provided
 $device_id = isset($_GET['device_id']) ? (int)$_GET['device_id'] : null;
+if ($device_id) {
+    assert_device_allowed($pdo, $admin_id, $device_id);
+}
 
 // Initialize wizard data in session
 if (!isset($_SESSION['wizard_data'])) {
@@ -161,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$customer_id) {
                 $error = 'Selecteer een klant.';
             } else {
+                assert_customer_allowed($pdo, $admin_id, $customer_id);
                 try {
                     $result = generate_config_from_template($pdo, $wizard_data['template_id'], $wizard_data['variables']);
 
