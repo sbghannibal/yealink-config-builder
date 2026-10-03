@@ -9,6 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../settings/database.php';
 require_once __DIR__ . '/../includes/rbac.php';
 require_once __DIR__ . '/../includes/i18n.php';
+require_once __DIR__ . '/../includes/massupdate_access.php';
 
 // Redirect to login if not authenticated
 if (!isset($_SESSION['admin_id'])) {
@@ -381,6 +382,12 @@ function can_access($permission, $permission_map) {
         <?php endif; ?>
 
         <!-- RESTORE DELETED DEVICES (Owner/Expert only) -->
+        <?php if (massupdate_owner_allowed($pdo, $admin_id)): ?>
+        <a href="/admin/massupdate.php" class="<?php echo $current_page === 'massupdate.php' ? 'active' : ''; ?>">
+            <?php echo __('nav.massupdate'); ?>
+        </a>
+        <?php endif; ?>
+
         <?php if (has_permission($pdo, $admin_id, 'devices.restore')): ?>
         <a href="/admin/devices_restore.php" class="<?php echo $current_page === 'devices_restore.php' ? 'active' : ''; ?>">
     ♻️ <?php echo __('nav.restore_devices'); ?>

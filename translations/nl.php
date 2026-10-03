@@ -3,6 +3,28 @@
  * Dutch translations (nl)
  */
 return [
+    'nav.massupdate' => 'Mass Update',
+    'massupdate.intro' => 'Maak één firmwarecampagne per Yealink-model. De configuratie bevat uitsluitend de firmwaredownloadlocatie; toestellen worden beheerd door het externe platform.',
+    'massupdate.reset' => 'De daglimiet geldt per campagne en per uniek MAC-adres. De teller reset dagelijks om 08:00 Belgische tijd (Europe/Brussels), ook bij zomer- en wintertijd. Herhaalde aanvragen van toegelaten toestellen verbruiken geen extra plaats.',
+    'massupdate.priority' => 'De eerste aanvragen krijgen toegang, ongeacht of het toestel nieuw of al geïnstalleerd is. Laat nieuwe toestellen eerst aanvragen als zij voorrang moeten krijgen. Toestellen met de doelversie of nieuwer, een verkeerd model of een bereikte limiet krijgen geen update.',
+    'massupdate.route' => 'Stel het externe platform in op de publieke provisioningroute:',
+    'massupdate.request' => 'Het toestel moet zijn model en huidige firmwareversie via een Yealink User-Agent doorgeven, en zijn MAC-adres via de bestandsnaam, queryparameter of User-Agent. Zonder deze gegevens wordt geen update aangeboden. Deze gegevens zijn geen toestelidentiteitsbewijs; de limiet telt toegelaten configuratiedownloads, niet bevestigde installaties.',
+    'massupdate.install' => 'Pas bij deployment eerst de databasemigraties toe:',
+    'massupdate.create' => 'Firmwarecampagne maken',
+    'massupdate.model' => 'Yealink-model',
+    'massupdate.version' => 'Doelversie',
+    'massupdate.url' => 'Firmwaredownloadlocatie (HTTP/HTTPS)',
+    'massupdate.limit' => 'Toestellen per dag (1–25000)',
+    'massupdate.active' => 'Actief',
+    'massupdate.campaigns' => 'Firmwarecampagnes',
+    'massupdate.empty' => 'Er zijn nog geen firmwarecampagnes.',
+    'massupdate.downloaded' => 'Vandaag toegelaten',
+    'massupdate.delete_warning' => 'Verwijder deze campagne en haar tellers. Opnieuw aanmaken begint een nieuwe limiet.',
+    'massupdate.saved' => 'De firmwarecampagne is opgeslagen.',
+    'massupdate.csrf_error' => 'Ongeldig CSRF-token. Vernieuw de pagina en probeer opnieuw.',
+    'massupdate.invalid' => 'Ongeldige invoer. Controleer het model, de numerieke firmwareversie, de HTTP/HTTPS-locatie zonder inloggegevens en de daglimiet.',
+    'massupdate.save_error' => 'Opslaan mislukt. Controleer of er al een campagne voor dit model bestaat en of de migraties zijn uitgevoerd.',
+    'massupdate.load_error' => 'Campagnes laden mislukt. Controleer of de databasemigraties zijn uitgevoerd.',
     // Navigation
     'nav.dashboard'           => 'Dashboard',
     'nav.devices'             => 'Devices',

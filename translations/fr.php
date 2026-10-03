@@ -3,6 +3,28 @@
  * French translations (fr)
  */
 return [
+    'nav.massupdate' => 'Mass Update',
+    'massupdate.intro' => 'Créez une campagne de firmware par modèle Yealink. La configuration contient uniquement l’adresse de téléchargement du firmware ; les appareils sont gérés par la plateforme externe.',
+    'massupdate.reset' => 'La limite quotidienne s’applique par campagne et adresse MAC unique. Le compteur est réinitialisé à 08:00, heure belge (Europe/Brussels), y compris lors des changements d’heure. Les nouvelles requêtes des appareils déjà admis ne consomment pas de place supplémentaire.',
+    'massupdate.priority' => 'Les premières requêtes sont admises, que les appareils soient nouveaux ou déjà installés. Faites passer les nouveaux appareils en premier pour leur donner la priorité. Les appareils à la version cible ou supérieure, les modèles différents et les requêtes au-delà de la limite ne reçoivent aucune mise à jour.',
+    'massupdate.route' => 'Configurez la plateforme externe avec la route publique de provisioning :',
+    'massupdate.request' => 'Les appareils doivent transmettre leur modèle et leur version actuelle via un User-Agent Yealink, et leur adresse MAC dans le nom du fichier, un paramètre ou le User-Agent. Sans ces données, aucune mise à jour n’est proposée. Ces données ne prouvent pas l’identité de l’appareil ; la limite compte les téléchargements de configuration admis, pas les installations confirmées.',
+    'massupdate.install' => 'Appliquez les migrations de base de données avant le déploiement :',
+    'massupdate.create' => 'Créer une campagne de firmware',
+    'massupdate.model' => 'Modèle Yealink',
+    'massupdate.version' => 'Version cible',
+    'massupdate.url' => 'Adresse du firmware (HTTP/HTTPS)',
+    'massupdate.limit' => 'Appareils par jour (1–25000)',
+    'massupdate.active' => 'Active',
+    'massupdate.campaigns' => 'Campagnes de firmware',
+    'massupdate.empty' => 'Aucune campagne de firmware.',
+    'massupdate.downloaded' => 'Admis aujourd’hui',
+    'massupdate.delete_warning' => 'Supprimer cette campagne et ses compteurs. La recréer ouvre un nouveau quota.',
+    'massupdate.saved' => 'La campagne de firmware a été enregistrée.',
+    'massupdate.csrf_error' => 'Jeton CSRF invalide. Actualisez la page et réessayez.',
+    'massupdate.invalid' => 'Saisie invalide. Vérifiez le modèle, la version numérique, l’adresse HTTP/HTTPS sans identifiants et la limite quotidienne.',
+    'massupdate.save_error' => 'Échec de l’enregistrement. Vérifiez si une campagne existe déjà pour ce modèle et si les migrations ont été appliquées.',
+    'massupdate.load_error' => 'Impossible de charger les campagnes. Vérifiez si les migrations de base de données ont été appliquées.',
     // Navigation
     'nav.dashboard'           => 'Tableau de bord',
     'nav.devices'             => 'Appareils',
