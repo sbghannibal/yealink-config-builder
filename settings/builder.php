@@ -158,6 +158,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute([$device_id]);
                     $result = $stmt->fetch(PDO::FETCH_ASSOC);
                     $next_version = ((int)($result['max_version'] ?? 0)) + 1;
+                    if ($result['max_version'] === null) {
+                        $set_active = true;
+                    }
 
                     // Get device type
                     $stmt = $pdo->prepare('SELECT device_type_id FROM devices WHERE id = ?');
@@ -185,10 +188,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     // Assign new config to device
                     $stmt = $pdo->prepare('
-                        INSERT INTO device_config_assignments (device_id, config_version_id, is_active, assigned_by, assigned_at)
-                        VALUES (?, ?, ?, ?, NOW())
+                        INSERT INTO device_config_assignments (device_id, config_version_id, is_active, assigned_by, assigned_at, activated_at)
+                        VALUES (?, ?, ?, ?, NOW(), CASE WHEN ? THEN NOW() ELSE NULL END)
                     ');
-                    $stmt->execute([$device_id, $config_version_id, $set_active ? 1 : 0, $admin_id]);
+                    $stmt->execute([$device_id, $config_version_id, $set_active ? 1 : 0, $admin_id, $set_active ? 1 : 0]);
 
                     // Log to history if set active
                     if ($set_active) {
