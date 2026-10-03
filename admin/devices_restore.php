@@ -370,7 +370,7 @@ require_once __DIR__ . '/_header.php';
                 </div>
             <?php endif; ?>
         <?php else: ?>
-            <p><?php echo __('info.no_deleted_devices'); ?></p>
+            <p><?php echo __('page.devices_restore.no_deleted'); ?></p>
         <?php endif; ?>
     </div>
 </div>
