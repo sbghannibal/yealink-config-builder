@@ -169,6 +169,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         $pdo->beginTransaction();
 
+                        // Lock the device before checking its existing assignments.
+                        if ($device_id) {
+                            $stmt = $pdo->prepare('SELECT id FROM devices WHERE id = ? FOR UPDATE');
+                            $stmt->execute([$device_id]);
+                            $stmt->fetchColumn();
+                        }
+
                         // Check if we can save config - we need a dummy pabx_id for backward compatibility
                         $stmt = $pdo->prepare('SELECT id FROM pabx WHERE pabx_name = ? LIMIT 1');
                         $stmt->execute([DEFAULT_CUSTOMER_PABX_NAME]);

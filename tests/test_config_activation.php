@@ -8,7 +8,8 @@ class ActivationTestPDO extends PDO
 {
     public function prepare(string $query, array $options = []): PDOStatement|false
     {
-        // Translate the wizard's MySQL upsert to SQLite for the in-memory fixture.
+        // Translate MySQL locking/upsert syntax for the single-connection SQLite fixture.
+        $query = str_replace(' FOR UPDATE', '', $query);
         $query = str_replace(
             'ON DUPLICATE KEY UPDATE config_version_id = VALUES(config_version_id), assigned_at = NOW()',
             'ON CONFLICT(device_id, config_version_id) DO UPDATE SET config_version_id = excluded.config_version_id, assigned_at = NOW()',

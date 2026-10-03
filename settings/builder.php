@@ -148,6 +148,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $pdo->beginTransaction();
 
+                    // Lock the device before checking its existing assignments.
+                    $stmt = $pdo->prepare('SELECT device_type_id FROM devices WHERE id = ? FOR UPDATE');
+                    $stmt->execute([$device_id]);
+                    $device_row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    $device_type_id = $device_row['device_type_id'] ?? null;
+
                     // Get highest version number for this device
                     $stmt = $pdo->prepare('
                         SELECT MAX(cv.version_number) as max_version
@@ -161,12 +167,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($result['max_version'] === null) {
                         $set_active = true;
                     }
-
-                    // Get device type
-                    $stmt = $pdo->prepare('SELECT device_type_id FROM devices WHERE id = ?');
-                    $stmt->execute([$device_id]);
-                    $device_row = $stmt->fetch(PDO::FETCH_ASSOC);
-                    $device_type_id = $device_row['device_type_id'] ?? null;
 
                     // Create new config version with default PABX ID
                     $stmt = $pdo->prepare('
