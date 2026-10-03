@@ -148,6 +148,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 try {
                     $pdo->beginTransaction();
 
+                    // Lock the device before checking its existing assignments.
+                    $stmt = $pdo->prepare('SELECT device_type_id FROM devices WHERE id = ? FOR UPDATE');
+                    $stmt->execute([$device_id]);
+                    $device_row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    $device_type_id = $device_row['device_type_id'] ?? null;
+
                     // Get highest version number for this device
                     $stmt = $pdo->prepare('
                         SELECT MAX(cv.version_number) as max_version
@@ -158,12 +164,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute([$device_id]);
                     $result = $stmt->fetch(PDO::FETCH_ASSOC);
                     $next_version = ((int)($result['max_version'] ?? 0)) + 1;
-
-                    // Get device type
-                    $stmt = $pdo->prepare('SELECT device_type_id FROM devices WHERE id = ?');
-                    $stmt->execute([$device_id]);
-                    $device_row = $stmt->fetch(PDO::FETCH_ASSOC);
-                    $device_type_id = $device_row['device_type_id'] ?? null;
+                    if ($result['max_version'] === null) {
+                        $set_active = true;
+                    }
 
                     // Create new config version with default PABX ID
                     $stmt = $pdo->prepare('
@@ -185,10 +188,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     // Assign new config to device
                     $stmt = $pdo->prepare('
-                        INSERT INTO device_config_assignments (device_id, config_version_id, is_active, assigned_by, assigned_at)
-                        VALUES (?, ?, ?, ?, NOW())
+                        INSERT INTO device_config_assignments (device_id, config_version_id, is_active, assigned_by, assigned_at, activated_at)
+                        VALUES (?, ?, ?, ?, NOW(), CASE WHEN ? THEN NOW() ELSE NULL END)
                     ');
-                    $stmt->execute([$device_id, $config_version_id, $set_active ? 1 : 0, $admin_id]);
+                    $stmt->execute([$device_id, $config_version_id, $set_active ? 1 : 0, $admin_id, $set_active ? 1 : 0]);
 
                     // Log to history if set active
                     if ($set_active) {

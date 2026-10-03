@@ -14,6 +14,7 @@ require_once __DIR__ . '/../settings/database.php';
 require_once __DIR__ . '/../settings/generator.php';
 require_once __DIR__ . '/../settings/validator.php';
 require_once __DIR__ . '/../includes/rbac.php';
+require_once __DIR__ . '/../includes/partner_access.php';
 require_once __DIR__ . '/../includes/form_helpers.php';
 
 // Default PABX name for customer-based configurations
@@ -55,6 +56,9 @@ $step = max(1, min(5, $step)); // Clamp between 1-5
 
 // Get device ID if provided
 $device_id = isset($_GET['device_id']) ? (int)$_GET['device_id'] : null;
+if ($device_id) {
+    assert_device_allowed($pdo, $admin_id, $device_id);
+}
 
 // Initialize wizard data in session
 if (!isset($_SESSION['wizard_data'])) {
@@ -161,12 +165,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$customer_id) {
                 $error = 'Selecteer een klant.';
             } else {
+                assert_customer_allowed($pdo, $admin_id, $customer_id);
                 try {
                     $result = generate_config_from_template($pdo, $wizard_data['template_id'], $wizard_data['variables']);
 
                     if (!$result['success']) {
                         $error = $result['error'];
                     } else {
+                        $pdo->beginTransaction();
+
+                        // Lock the device before checking its existing assignments.
+                        if ($device_id) {
+                            $stmt = $pdo->prepare('SELECT id FROM devices WHERE id = ? FOR UPDATE');
+                            $stmt->execute([$device_id]);
+                            $stmt->fetchColumn();
+                        }
+
                         // Check if we can save config - we need a dummy pabx_id for backward compatibility
                         $stmt = $pdo->prepare('SELECT id FROM pabx WHERE pabx_name = ? LIMIT 1');
                         $stmt->execute([DEFAULT_CUSTOMER_PABX_NAME]);
@@ -208,6 +222,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         // Assign to device if device_id provided and update customer_id
                         if ($device_id) {
+                            $stmt = $pdo->prepare('SELECT COUNT(*) FROM device_config_assignments WHERE device_id = ?');
+                            $stmt->execute([$device_id]);
+                            $set_active = (int)$stmt->fetchColumn() === 0;
+
                             // Update device customer_id
                             $stmt = $pdo->prepare('UPDATE devices SET customer_id = ? WHERE id = ?');
                             $stmt->execute([$customer_id, $device_id]);
@@ -215,12 +233,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             // Assign config to device
                             $stmt = $pdo->prepare('
                                 INSERT INTO device_config_assignments
-                                (device_id, config_version_id, assigned_by, assigned_at)
-                                VALUES (?, ?, ?, NOW())
+                                (device_id, config_version_id, assigned_by, assigned_at, is_active, activated_at)
+                                VALUES (?, ?, ?, NOW(), ?, CASE WHEN ? THEN NOW() ELSE NULL END)
                                 ON DUPLICATE KEY UPDATE config_version_id = VALUES(config_version_id), assigned_at = NOW()
                             ');
-                            $stmt->execute([$device_id, $config_version_id, $admin_id]);
+                            $stmt->execute([$device_id, $config_version_id, $admin_id, $set_active ? 1 : 0, $set_active ? 1 : 0]);
+
+                            if ($set_active) {
+                                $stmt = $pdo->prepare('
+                                    INSERT INTO config_version_history (device_id, config_version_id, is_active, activated_at, activated_by)
+                                    VALUES (?, ?, 1, NOW(), ?)
+                                ');
+                                $stmt->execute([$device_id, $config_version_id, $admin_id]);
+                            }
                         }
+
+                        $pdo->commit();
 
                         $wizard_data['config_version_id'] = $config_version_id;
                         $wizard_data['config_content'] = $result['content'];
@@ -230,6 +258,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         exit;
                     }
                 } catch (Exception $e) {
+                    if ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
                     error_log('Wizard save error: ' . $e->getMessage());
                     $error = 'Kon configuratie niet opslaan: ' . $e->getMessage();
                 }
