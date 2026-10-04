@@ -38,6 +38,11 @@ foreach ([1 => true, 2 => true, 3 => false, 5 => false] as $admin_id => $visible
     eval('?>' . $navigation);
     $html = ob_get_clean();
     massupdate_access_assert(str_contains($html, '/admin/massupdate.php') === $visible, 'Navigation visibility ' . $admin_id);
+    massupdate_access_assert(str_contains($html, '/admin/massupdate_logging.php') === $visible, 'Logging navigation visibility ' . $admin_id);
+    if ($visible) {
+        massupdate_access_assert(str_contains($html, 'nav-dropdown-content')
+            && strpos($html, '/admin/massupdate.php') < strpos($html, '/admin/massupdate_logging.php'), 'Config is first dropdown item');
+    }
 }
 
 $source = file_get_contents(__DIR__ . '/../admin/massupdate.php');
@@ -50,10 +55,25 @@ massupdate_access_assert($csrf !== false && $csrf < $write, 'CSRF verified befor
 massupdate_access_assert(strpos($source, 'INSERT INTO audit_logs') < strpos($source, '$pdo->commit();'), 'Audit is atomic with campaign mutations');
 massupdate_access_assert(!str_contains($source, 'has_permission('), 'Generic permissions cannot bypass Owner role');
 
+$logging = file_get_contents(__DIR__ . '/../admin/massupdate_logging.php');
+$guard = strpos($logging, 'require_massupdate_owner($pdo, $admin_id);');
+$csrf = strpos($logging, '!hash_equals($csrf, $token)');
+massupdate_access_assert($guard !== false && $guard < strpos($logging, 'massupdate_log_retention($pdo)')
+    && $guard < strpos($logging, 'INSERT INTO settings'), 'Logging reads and writes require Owner');
+massupdate_access_assert($csrf !== false && $csrf < strpos($logging, 'INSERT INTO settings')
+    && $csrf < strpos($logging, 'massupdate_log_cleanup($pdo'), 'Logging settings and manual cleanup are CSRF protected');
+
 foreach (['nl', 'en', 'fr'] as $language) {
     $translations = load_translations($language);
     preg_match_all("/__\\('(massupdate\\.[a-z_]+|nav\\.massupdate)'\\)/", $source . $navigation, $matches);
     foreach (array_unique($matches[1]) as $key) {
         massupdate_access_assert(!empty($translations[$key]), $language . ' translation ' . $key);
+    }
+    preg_match_all("/__\\('((?:massupdate_log|nav)\\.[a-z_]+)'\\)/", $logging . $navigation, $matches);
+    foreach (array_unique($matches[1]) as $key) {
+        massupdate_access_assert(!empty($translations[$key]), $language . ' logging translation ' . $key);
+    }
+    foreach (['served', 'up_to_date', 'quota', 'inactive', 'no_campaign'] as $status) {
+        massupdate_access_assert(!empty($translations['massupdate_log.status_' . $status]), $language . ' logging status ' . $status);
     }
 }

@@ -4,10 +4,16 @@ require_once __DIR__ . '/../includes/massupdate.php';
 class MassupdateTestPDO extends PDO
 {
     public array $queries = [];
+    public bool $failLogging = false;
+    public string $cleanupNow;
 
     public function prepare(string $query, array $options = []): PDOStatement|false
     {
         $this->queries[] = $query;
+        if ($this->failLogging && str_contains($query, 'INSERT INTO massupdate_log')) {
+            throw new RuntimeException('logging unavailable');
+        }
+        $query = str_replace('NOW() - INTERVAL ? DAY', "datetime('$this->cleanupNow', '-' || ? || ' days')", $query);
         return parent::prepare(str_replace(' FOR UPDATE', '', $query), $options);
     }
 }
@@ -106,6 +112,7 @@ foreach ([
 
 $pdo = new MassupdateTestPDO('sqlite::memory:');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$pdo->cleanupNow = (string)$pdo->query('SELECT CURRENT_TIMESTAMP')->fetchColumn();
 $pdo->exec('PRAGMA foreign_keys = ON');
 $pdo->exec('
     CREATE TABLE massupdate_campaigns (
@@ -117,12 +124,20 @@ $pdo->exec('
         PRIMARY KEY (campaign_id, period_date, mac_address),
         FOREIGN KEY (campaign_id) REFERENCES massupdate_campaigns(id) ON DELETE CASCADE
     );
+    CREATE TABLE massupdate_log (
+        id INTEGER PRIMARY KEY, mac_address TEXT, device_model TEXT, firmware_old TEXT,
+        firmware_new TEXT, campaign_id INTEGER, status TEXT, ip TEXT, user_agent TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (campaign_id) REFERENCES massupdate_campaigns(id) ON DELETE SET NULL
+    );
+    CREATE TABLE settings (setting_key TEXT PRIMARY KEY, setting_value TEXT);
     INSERT INTO massupdate_campaigns VALUES (1, "T46S", "66.86.0.20", "https://firmware.example/T46S.rom", 2, 1);
     INSERT INTO massupdate_campaigns VALUES (2, "T54W", "96.86.0.20", "https://firmware.example/T54W.rom", 1, 0);
 ');
 $now = new DateTimeImmutable('2026-03-29T08:00:00+02:00');
 $expected = "#!version:1.0.0.1\nfirmware.url = https://firmware.example/T46S.rom\n";
 $count = static fn(): int => (int)$pdo->query('SELECT COUNT(*) FROM massupdate_downloads')->fetchColumn();
+$logCount = static fn(): int => (int)$pdo->query('SELECT COUNT(*) FROM massupdate_log')->fetchColumn();
 massupdate_test(massupdate_admit($pdo, array_replace($parsed, ['model' => 'T48S']), $now) === null && $count() === 0, 'unknown model has no output or slot');
 massupdate_test(massupdate_admit($pdo, array_replace($parsed, ['version' => '66.86.0.20']), $now) === null && $count() === 0, 'equal target has no output or slot');
 massupdate_test(massupdate_admit($pdo, array_replace($parsed, ['version' => '66.100.0.1']), $now) === null && $count() === 0, 'newer numeric version has no output or slot');
@@ -166,9 +181,45 @@ $before = $count();
 massupdate_test(massupdate_respond('HEAD', '/massupdate/001122aabbcc.cfg', [], $ua, $connect, $now) === [204, ''] && $connects === 0 && $count() === $before,
     'supported HEAD returns 204 without body, database access or quota');
 massupdate_test(massupdate_respond('POST', '/massupdate/001122aabbcc.cfg', [], $ua, $connect, $now) === [405, ''] && $connects === 0, 'unsupported method returns 405');
+massupdate_test($logCount() === 0, 'HEAD, unsupported paths and methods never log');
 massupdate_test(massupdate_respond('GET', '/massupdate/249ad8667732.cfg', [], $w70bUa, $connect, $now) === [404, ''] && $connects === 1, 'GET without campaign config returns 404');
-[$status, $body] = massupdate_respond('GET', '/massupdate/001122aabbcc.cfg', [], $ua, $connect, $now);
+massupdate_test($pdo->query('SELECT status FROM massupdate_log')->fetchColumn() === 'no-campaign', 'supported GET without campaign logs its result');
+[$status, $body] = massupdate_respond('GET', '/massupdate/001122aabbcc.cfg', [], $ua, $connect, $now, '192.0.2.1');
 massupdate_test($status === 200 && $body === $expected && str_starts_with($body, "#!version:1.0.0.1\n"), 'supported GET returns 200 with firmware-only config');
+$log = $pdo->query('SELECT * FROM massupdate_log ORDER BY id DESC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+massupdate_test($logCount() === 2 && $log['mac_address'] === $parsed['mac'] && $log['device_model'] === 'T46S'
+    && $log['firmware_old'] === '66.85.0.10' && $log['firmware_new'] === '66.86.0.20'
+    && (int)$log['campaign_id'] === 1 && $log['status'] === 'served' && $log['ip'] === '192.0.2.1'
+    && $log['user_agent'] === $ua, '200 GET logs device, versions, campaign, result, IP and UA');
+massupdate_test(massupdate_respond('GET', '/massupdate/001122aabbcc.cfg', [], 'Yealink SIP-T46S 66.86.0.20', $connect, $now) === [404, '']
+    && $pdo->query('SELECT status FROM massupdate_log ORDER BY id DESC LIMIT 1')->fetchColumn() === 'up-to-date', 'up-to-date GET logs without changing 404');
+massupdate_test(massupdate_respond('GET', '/massupdate/001122aabbee.cfg', [], $ua, $connect, $now) === [404, '']
+    && $pdo->query('SELECT status FROM massupdate_log ORDER BY id DESC LIMIT 1')->fetchColumn() === 'quota', 'quota GET logs without changing 404');
+$pdo->failLogging = true;
+massupdate_test(massupdate_respond('GET', '/massupdate/001122aabbcc.cfg', [], $ua, $connect, $now) === [200, $expected], 'logging failure preserves 200 and config');
+massupdate_test(massupdate_respond('GET', '/massupdate/001122aabbee.cfg', [], $ua, $connect, $now) === [404, ''], 'logging failure preserves 404');
+$pdo->failLogging = false;
+$beforeLogs = $logCount();
+$pdo->exec("
+    INSERT INTO massupdate_log (created_at) VALUES
+        (datetime('$pdo->cleanupNow', '-31 days')), (datetime('$pdo->cleanupNow', '-30 days')), (datetime('$pdo->cleanupNow', '-29 days'));
+");
+massupdate_test(massupdate_log_retention($pdo) === 30, 'default log retention is 30 days');
+massupdate_test(massupdate_log_cleanup($pdo, 30) === 1 && $logCount() === $beforeLogs + 2, 'retention removes only old rows, keeps boundary and recent rows');
+$pdo->exec('INSERT INTO settings VALUES ("massupdate_log_retention_days", "7")');
+massupdate_test(massupdate_log_retention($pdo) === 7 && massupdate_log_cleanup($pdo, 7) === 2, 'configured retention used for cleanup');
+$pdo->exec('UPDATE settings SET setting_value = "0"');
+massupdate_test(massupdate_log_retention($pdo) === 30, 'invalid stored retention uses safe default');
+foreach ([0, -1, 3651] as $days) {
+    try {
+        massupdate_log_cleanup($pdo, $days);
+        massupdate_test(false, 'invalid retention rejected');
+    } catch (InvalidArgumentException $e) {
+        massupdate_test($logCount() === $beforeLogs, 'invalid retention cannot delete logs');
+    }
+}
+$pdo->exec('DROP TABLE massupdate_log');
+massupdate_test(massupdate_respond('GET', '/massupdate/001122aabbcc.cfg', [], $ua, $connect, $now) === [200, $expected], 'missing log migration preserves provisioning');
 $failing = static function (): PDO {
     throw new RuntimeException('down');
 };

@@ -55,6 +55,11 @@ Ondersteunt naast bestaande Yealink-configuraties nu ook:
   - `404`: niet-ondersteunde bestanden (bv. `.boot`, `.enc`), ongeldige aanvragen of geen config beschikbaar (geen/inactieve campagne, al up-to-date, dagquotum bereikt). Niet-ondersteunde bestanden raken de database niet.
   - `204`: HEAD op een ondersteunde URL. HEAD gebruikt nooit de database en verbruikt nooit quotum.
   - `405`: andere methodes dan GET/HEAD. `503`: database-/interne fout.
+- Het menu **Mass Update** bevat **Massupdate config** (de bestaande campagnepagina) en **Massupdate logging** (`/admin/massupdate_logging.php`). Beide zijn uitsluitend voor actieve Owners.
+- Voer vóór deployment `php setup/run_migrations.php` uit. Migratie `20_massupdate_log.sql` voegt `massupdate_log` toe met MAC-adres, toestelmodel, oude en nieuwe firmwareversie, campagne, resultaat, IP, User-Agent en tijdstip; tijdstip en MAC-adres zijn geïndexeerd. Bij verwijdering van een campagne blijft de log bewaard met een lege campagneverwijzing.
+- Ondersteunde GET-aanvragen loggen `served`, `up-to-date`, `quota`, `inactive` of `no-campaign`. HEAD, ongeldige/niet-ondersteunde aanvragen en andere methodes loggen niet en raken de database niet. Log- en opschoonfouten veranderen de provisioningresponse niet. `served` betekent dat de configuratie geleverd is, niet dat de firmware-installatie bevestigd is.
+- De loggingpagina toont nieuwste aanvragen eerst (50 per pagina), filters op MAC-adres, toesteltype en inclusief datumbereik, en aantallen aanvragen/unieke MAC-adressen per toesteltype en nieuwe softwareversie binnen die filters.
+- **Logbewaartermijn (dagen)** staat standaard op **30**, is instelbaar van 1 tot 3650 op de loggingpagina en wordt opgeslagen als `settings.massupdate_log_retention_days`. Oudere logregels worden verwijderd bij het openen van de pagina en bij ongeveer 1% van de ondersteunde GET-aanvragen. **Nu opschonen** verwijdert direct alleen verlopen logregels via een CSRF-beveiligde POST. Zonder aanvragen of paginabezoek vindt geen opschoning plaats. Campagnes en quotumtellers blijven ongewijzigd.
 
 ## Installatie
 
