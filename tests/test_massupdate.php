@@ -29,11 +29,10 @@ function massupdate_test(bool $condition, string $label): void
 $ua = 'Yealink SIP-T46S 66.85.0.10';
 $parsed = ['mac' => '001122AABBCC', 'model' => 'T46S', 'version' => '66.85.0.10'];
 massupdate_test(massupdate_parse_request('/massupdate/001122aabbcc.cfg?x=1', [], $ua) === $parsed, 'MAC filename ignores query string');
-massupdate_test(massupdate_parse_request('/massupdate/', ['mac' => '00:11:22:aa:bb:cc'], $ua) === $parsed, 'colon query MAC');
-massupdate_test(massupdate_parse_request('/massupdate/index.php', ['mac' => '00-11-22-aa-bb-cc'], $ua) === $parsed, 'hyphen query MAC');
-massupdate_test(massupdate_parse_request('/massupdate/', [], $ua . ' 001122aabbcc') === $parsed, 'UA MAC');
-massupdate_test(massupdate_parse_request('/massupdate/y000000000028.cfg', [], $ua . ' (00:11:22:aa:bb:cc)') === $parsed, 'generic config with UA MAC');
-massupdate_test(massupdate_parse_request('/massupdate/', ['mac' => '001122AABBCC'], 'Yealink W75DM 108.83.0.40')['model'] === 'W75DM', 'DECT model');
+massupdate_test(massupdate_parse_request('/massupdate/001122AABBCC.CFG', ['mac' => '00:11:22:aa:bb:cc'], $ua) === $parsed, 'case-insensitive MAC filename with colon query MAC');
+massupdate_test(massupdate_parse_request('/massupdate/001122aabbcc.cfg', ['mac' => '00-11-22-aa-bb-cc'], $ua) === $parsed, 'hyphen query MAC agrees with filename');
+massupdate_test(massupdate_parse_request('/massupdate/001122aabbcc.cfg', [], $ua . ' (00:11:22:aa:bb:cc)') === $parsed, 'UA MAC agrees with filename');
+massupdate_test(massupdate_parse_request('/massupdate/001122aabbcc.cfg', ['mac' => '001122AABBCC'], 'Yealink W75DM 108.83.0.40')['model'] === 'W75DM', 'DECT model');
 foreach ([
     ['/massupdate/001122aabbcc.boot', [], $ua . ' 001122aabbcc'],
     ['/massupdate/unknown.cfg', [], $ua . ' 001122aabbcc'],
@@ -41,16 +40,16 @@ foreach ([
     ['/massupdate/%30%30%31%31%32%32aabbcc.cfg', [], $ua],
     ['/massupdate/y000000000028.cfg', ['mac' => '001122aabbcc'], $ua],
     ['/massupdate/', [], $ua],
-    ['/massupdate/', ['mac' => ['001122aabbcc']], $ua],
-    ['/massupdate/', ['mac' => '001122aabbcc!'], $ua],
-    ['/massupdate/', ['mac' => '00:11-22:aa:bb:cc'], $ua],
-    ['/massupdate/', ['mac' => ' 001122aabbcc'], $ua],
-    ['/massupdate/', ['mac' => '001122aabbcc'], 'Other T46S 66.85.0.10'],
-    ['/massupdate/', ['mac' => '001122aabbcc'], 'Yealink SIP-T46S'],
-    ['/massupdate/', ['mac' => '001122aabbcc'], 'Yealink SIP-T46S 66.85.0.10evil'],
+    ['/massupdate/001122aabbcc.cfg', ['mac' => ['001122aabbcc']], $ua],
+    ['/massupdate/001122aabbcc.cfg', ['mac' => '001122aabbcc!'], $ua],
+    ['/massupdate/001122aabbcc.cfg', ['mac' => '00:11-22:aa:bb:cc'], $ua],
+    ['/massupdate/001122aabbcc.cfg', ['mac' => ' 001122aabbcc'], $ua],
+    ['/massupdate/001122aabbcc.cfg', ['mac' => '001122aabbcc'], 'Other T46S 66.85.0.10'],
+    ['/massupdate/001122aabbcc.cfg', ['mac' => '001122aabbcc'], 'Yealink SIP-T46S'],
+    ['/massupdate/001122aabbcc.cfg', ['mac' => '001122aabbcc'], 'Yealink SIP-T46S 66.85.0.10evil'],
     ['/massupdate/001122aabbcc.cfg', ['mac' => '001122aabbdd'], $ua],
     ['/massupdate/001122aabbcc.cfg', [], $ua . ' 001122aabbdd'],
-    ['/massupdate/', [], $ua . ' 001122aabbcc 001122aabbdd'],
+    ['/massupdate/001122aabbcc.cfg', [], $ua . ' 001122aabbcc 001122aabbdd'],
 ] as [$uri, $query, $agent]) {
     massupdate_test(massupdate_parse_request($uri, $query, $agent) === null, 'reject invalid request: ' . $uri . ' / ' . $agent);
 }
@@ -171,6 +170,17 @@ $connect = static function () use ($pdo, &$connects): PDO {
 };
 $w70bUa = 'Yealink W70B 146.87.188.1 24:9a:d8:66:77:32';
 foreach (['GET', 'HEAD'] as $method) {
+    foreach (['/massupdate/y000000000146.cfg', '/massupdate/y000000000028.cfg', '/massupdate/', '/massupdate/index.php'] as $uri) {
+        foreach ([[], ['mac' => '001122aabbcc']] as $query) {
+            foreach ([$ua, $ua . ' (00:11:22:aa:bb:cc)'] as $agent) {
+                $before = $count();
+                $beforeQueries = count($pdo->queries);
+                massupdate_test(massupdate_respond($method, $uri, $query, $agent, $connect, $now) === [404, '']
+                    && $connects === 0 && count($pdo->queries) === $beforeQueries && $count() === $before && $logCount() === 0,
+                    $method . ' ' . $uri . ' rejects query/UA identity without database, quota or logs');
+            }
+        }
+    }
     foreach (['/massupdate/249ad8667732.boot', '/massupdate/249ad8667732.enc', '/massupdate/unknown.cfg', '/massupdate/index.php/unknown'] as $uri) {
         $before = $count();
         massupdate_test(massupdate_respond($method, $uri, [], $w70bUa, $connect, $now) === [404, ''] && $connects === 0 && $count() === $before,
@@ -237,9 +247,10 @@ $entry = static function (string $method, string $uri): array {
     return [$err, $out];
 };
 foreach (['GET', 'HEAD'] as $method) {
-    foreach (['/massupdate/249ad8667732.boot', '/massupdate/249ad8667732.enc'] as $uri) {
+    foreach (['/massupdate/249ad8667732.boot', '/massupdate/249ad8667732.enc', '/massupdate/y000000000146.cfg', '/massupdate/', '/massupdate/index.php'] as $uri) {
         massupdate_test($entry($method, $uri) === ['404', ''], 'endpoint ' . $method . ' ' . $uri . ' returns empty 404');
     }
+    massupdate_test($entry('HEAD', '/massupdate/249ad8667732.cfg') === ['204', ''], 'endpoint supported HEAD stays database-free');
 }
 massupdate_test($entry('PUT', '/massupdate/249ad8667732.cfg') === ['405', ''], 'endpoint PUT returns 405');
 massupdate_test($entry('GET', '/massupdate/249ad8667732.cfg') === ['503', ''], 'endpoint database failure returns empty 503');

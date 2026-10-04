@@ -31,15 +31,10 @@ function massupdate_parse_request(string $uri, array $query, string $ua): ?array
     if (!is_string($path)) {
         return null;
     }
-    $filenameMac = null;
-    $generic = false;
-    if (preg_match('#\A/massupdate/([a-f0-9]{12})\.cfg\z#i', $path, $file)) {
-        $filenameMac = strtoupper($file[1]);
-    } elseif (preg_match('#\A/massupdate/y000000000[0-9]{3}\.cfg\z#i', $path)) {
-        $generic = true;
-    } elseif (!in_array($path, ['/massupdate/', '/massupdate/index.php'], true)) {
+    if (!preg_match('#\A/massupdate/([a-f0-9]{12})\.cfg\z#i', $path, $file)) {
         return null;
     }
+    $filenameMac = strtoupper($file[1]);
     $queryMac = null;
     if (array_key_exists('mac', $query)) {
         if (!is_string($query['mac']) || ($queryMac = massupdate_normalize_mac($query['mac'])) === null) {
@@ -52,7 +47,7 @@ function massupdate_parse_request(string $uri, array $query, string $ua): ?array
         $uaMacs[] = massupdate_normalize_mac($macMatch);
     }
     $uaMacs = array_values(array_unique($uaMacs));
-    if (count($uaMacs) > 1 || ($generic && !$uaMacs)) {
+    if (count($uaMacs) > 1) {
         return null;
     }
     $macs = array_values(array_unique(array_filter([$filenameMac, $queryMac, $uaMacs[0] ?? null])));
