@@ -32,7 +32,8 @@ $connect = static function () use (&$databaseLoaded, $bufferLevel): PDO {
     $_GET,
     $_SERVER['HTTP_USER_AGENT'] ?? '',
     $connect,
-    new DateTimeImmutable('now')
+    new DateTimeImmutable('now'),
+    $_SERVER['REMOTE_ADDR'] ?? ''
 );
 while (ob_get_level() > $bufferLevel) {
     ob_end_clean();

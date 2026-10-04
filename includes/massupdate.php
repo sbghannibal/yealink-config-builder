@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/massupdate_log.php';
+
 function massupdate_period(DateTimeImmutable $now): string
 {
     $local = $now->setTimezone(new DateTimeZone('Europe/Brussels'));
@@ -109,8 +111,9 @@ function massupdate_validate_campaign(array $input): array
     ];
 }
 
-function massupdate_admit(PDO $pdo, array $request, DateTimeImmutable $now): ?string
+function massupdate_admit(PDO $pdo, array $request, DateTimeImmutable $now, ?array &$outcome = null): ?string
 {
+    $outcome = ['campaign_id' => null, 'firmware_new' => null, 'status' => 'no-campaign'];
     if (!isset($request['mac'], $request['model'], $request['version'])
         || !is_string($request['mac']) || !is_string($request['model']) || !is_string($request['version'])
         || massupdate_normalize_mac($request['mac']) !== $request['mac']
@@ -126,12 +129,20 @@ function massupdate_admit(PDO $pdo, array $request, DateTimeImmutable $now): ?st
         $stmt = $pdo->prepare('SELECT * FROM massupdate_campaigns WHERE model = ? FOR UPDATE');
         $stmt->execute([$request['model']]);
         $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$campaign || !(int)$campaign['is_active']) {
+        if (!$campaign) {
+            $pdo->commit();
+            return null;
+        }
+        $outcome['campaign_id'] = (int)$campaign['id'];
+        $outcome['firmware_new'] = $campaign['target_version'];
+        if (!(int)$campaign['is_active']) {
+            $outcome['status'] = 'inactive';
             $pdo->commit();
             return null;
         }
         $valid = massupdate_validate_campaign($campaign);
         if (version_compare($request['version'], $valid['target_version'], '>=')) {
+            $outcome['status'] = 'up-to-date';
             $pdo->commit();
             return null;
         }
@@ -141,6 +152,7 @@ function massupdate_admit(PDO $pdo, array $request, DateTimeImmutable $now): ?st
             $stmt = $pdo->prepare('SELECT COUNT(*) FROM massupdate_downloads WHERE campaign_id = ? AND period_date = ?');
             $stmt->execute([$campaign['id'], $period]);
             if ((int)$stmt->fetchColumn() >= $valid['daily_limit']) {
+                $outcome['status'] = 'quota';
                 $pdo->commit();
                 return null;
             }
@@ -148,6 +160,7 @@ function massupdate_admit(PDO $pdo, array $request, DateTimeImmutable $now): ?st
             $stmt->execute([$campaign['id'], $period, $request['mac']]);
         }
         $pdo->commit();
+        $outcome['status'] = 'served';
         return "#!version:1.0.0.1\nfirmware.url = " . $valid['firmware_url'] . "\n";
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) {
@@ -162,7 +175,7 @@ function massupdate_admit(PDO $pdo, array $request, DateTimeImmutable $now): ?st
  * Unsupported resources and requests without an available config return 404.
  * HEAD never connects to the database or consumes quota: supported resources return 204.
  */
-function massupdate_respond(string $method, string $uri, array $query, string $ua, callable $connect, DateTimeImmutable $now): array
+function massupdate_respond(string $method, string $uri, array $query, string $ua, callable $connect, DateTimeImmutable $now, string $ip = ''): array
 {
     if (!in_array($method, ['GET', 'HEAD'], true)) {
         return [405, ''];
@@ -175,9 +188,22 @@ function massupdate_respond(string $method, string $uri, array $query, string $u
         return [204, ''];
     }
     try {
-        $config = massupdate_admit($connect(), $request, $now);
+        $pdo = $connect();
+        $config = massupdate_admit($pdo, $request, $now, $outcome);
     } catch (Throwable $e) {
         return [503, ''];
+    }
+    try {
+        massupdate_log_write($pdo, $request, $outcome, $ua, $ip);
+    } catch (Throwable $e) {
+        // Logging must not affect provisioning or its quota.
+    }
+    try {
+        if (random_int(1, 100) === 1) {
+            massupdate_log_cleanup($pdo, massupdate_log_retention($pdo));
+        }
+    } catch (Throwable $e) {
+        // Cleanup is best-effort, even before the logging migration is applied.
     }
     return $config === null ? [404, ''] : [200, $config];
 }

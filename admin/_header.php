@@ -383,9 +383,19 @@ function can_access($permission, $permission_map) {
 
         <!-- RESTORE DELETED DEVICES (Owner/Expert only) -->
         <?php if (massupdate_owner_allowed($pdo, $admin_id)): ?>
-        <a href="/admin/massupdate.php" class="<?php echo $current_page === 'massupdate.php' ? 'active' : ''; ?>">
-            <?php echo __('nav.massupdate'); ?>
-        </a>
+        <div class="nav-dropdown">
+            <a class="<?php echo in_array($current_page, ['massupdate.php', 'massupdate_logging.php']) ? 'active' : ''; ?>">
+                <?php echo __('nav.massupdate'); ?> <span class="dropdown-arrow">▼</span>
+            </a>
+            <div class="nav-dropdown-content">
+                <a href="/admin/massupdate.php" class="<?php echo $current_page === 'massupdate.php' ? 'active' : ''; ?>">
+                    <?php echo __('nav.massupdate_config'); ?>
+                </a>
+                <a href="/admin/massupdate_logging.php" class="<?php echo $current_page === 'massupdate_logging.php' ? 'active' : ''; ?>">
+                    <?php echo __('nav.massupdate_logging'); ?>
+                </a>
+            </div>
+        </div>
         <?php endif; ?>
 
         <?php if (has_permission($pdo, $admin_id, 'devices.restore')): ?>
