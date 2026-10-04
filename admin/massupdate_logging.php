@@ -78,7 +78,12 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         massupdate_log_cleanup($pdo, $retention);
     }
-    $conditions = [];
+    $conditions = [
+        "status = 'served'",
+        "firmware_old IS NOT NULL AND TRIM(firmware_old) <> ''",
+        "firmware_new IS NOT NULL AND TRIM(firmware_new) <> ''",
+        'firmware_old <> firmware_new',
+    ];
     $params = [];
     if ($filters['mac'] !== '') {
         $mac = massupdate_normalize_mac($filters['mac']);

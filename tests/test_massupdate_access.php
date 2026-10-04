@@ -3,6 +3,7 @@
  * Run with: php tests/test_massupdate_access.php
  */
 require_once __DIR__ . '/../includes/massupdate_access.php';
+require_once __DIR__ . '/../includes/massupdate.php';
 require_once __DIR__ . '/../includes/i18n.php';
 
 function massupdate_access_assert(bool $condition, string $label): void
@@ -62,6 +63,72 @@ massupdate_access_assert($guard !== false && $guard < strpos($logging, 'massupda
     && $guard < strpos($logging, 'INSERT INTO settings'), 'Logging reads and writes require Owner');
 massupdate_access_assert($csrf !== false && $csrf < strpos($logging, 'INSERT INTO settings')
     && $csrf < strpos($logging, 'massupdate_log_cleanup($pdo'), 'Logging settings and manual cleanup are CSRF protected');
+
+$pdo->exec('CREATE TABLE massupdate_log (
+    id INTEGER PRIMARY KEY, mac_address TEXT, device_model TEXT, firmware_old TEXT,
+    firmware_new TEXT, status TEXT, created_at TEXT
+)');
+$insert = $pdo->prepare('INSERT INTO massupdate_log
+    (mac_address, device_model, firmware_old, firmware_new, status, created_at) VALUES (?, ?, ?, ?, ?, ?)');
+$served = ['001122AABBCC', 'T46S', '66.85.0.10', '66.86.0.20', 'served', '2026-01-02 12:00:00'];
+for ($i = 0; $i < 51; $i++) {
+    $insert->execute($served);
+}
+$insert->execute(array_replace($served, [0 => '001122AABBDD', 5 => '2026-01-03 00:00:00']));
+$insert->execute(['001122AABBEE', 'T54W', '96.85.0.10', '96.86.0.20', 'served', '2026-01-01 23:59:59']);
+$insert->execute(array_replace($served, [3 => '66.100.0.1']));
+foreach (['up-to-date', 'quota', 'inactive', 'no-campaign', '200'] as $status) {
+    $insert->execute(array_replace($served, [4 => $status]));
+}
+$insert->execute(array_replace($served, [2 => $served[3]]));
+foreach ([2, 3] as $version) {
+    foreach ([null, '', '   '] as $missing) {
+        $insert->execute(array_replace($served, [$version => $missing]));
+    }
+}
+
+$queryStart = strpos($logging, '    $conditions = ');
+$queryEnd = strpos($logging, "\n} catch (InvalidArgumentException", $queryStart);
+massupdate_access_assert($queryStart !== false && $queryEnd !== false, 'Logging query block found');
+$queryCode = substr($logging, $queryStart, $queryEnd - $queryStart);
+$readLogs = static function (array $input = [], int $page = 1) use ($pdo, $queryCode): array {
+    $filters = array_replace(['mac' => '', 'model' => '', 'date_from' => '', 'date_to' => ''], $input);
+    eval($queryCode);
+    return compact('logs', 'total', 'pages', 'page', 'summary');
+};
+$assertRead = static function (array $result, int $total, array $expectedSummary, string $label): void {
+    massupdate_access_assert($result['total'] === $total && $result['pages'] === max(1, (int)ceil($total / 50)),
+        $label . ' count and pagination');
+    massupdate_access_assert($result['summary'] === $expectedSummary, $label . ' grouped requests and unique devices');
+    foreach ($result['logs'] as $log) {
+        massupdate_access_assert($log['status'] === 'served' && trim($log['firmware_old'] ?? '') !== ''
+            && trim($log['firmware_new'] ?? '') !== '' && $log['firmware_old'] !== $log['firmware_new'],
+            $label . ' visible successful version change ' . $log['id']);
+    }
+};
+$t46 = ['device_model' => 'T46S', 'firmware_new' => '66.86.0.20', 'requests' => 52, 'devices' => 2];
+$otherTarget = ['device_model' => 'T46S', 'firmware_new' => '66.100.0.1', 'requests' => 1, 'devices' => 1];
+$t54 = ['device_model' => 'T54W', 'firmware_new' => '96.86.0.20', 'requests' => 1, 'devices' => 1];
+$result = $readLogs();
+$assertRead($result, 54, [$otherTarget, $t46, $t54], 'Unfiltered');
+massupdate_access_assert(count($result['logs']) === 50 && (int)$result['logs'][0]['id'] === 52,
+    'First page preserves date then ID descending order and page size');
+$result = $readLogs([], 99);
+$assertRead($result, 54, [$otherTarget, $t46, $t54], 'Last page');
+massupdate_access_assert($result['page'] === 2 && count($result['logs']) === 4
+    && (int)end($result['logs'])['id'] === 53, 'Page clamping and oldest row');
+$assertRead($readLogs(['mac' => '00:11:22:aa:bb:cc']), 52,
+    [$otherTarget, array_replace($t46, ['requests' => 51, 'devices' => 1])], 'MAC filter');
+$assertRead($readLogs(['model' => 't54w']), 1, [$t54], 'Model filter');
+$assertRead($readLogs(['date_from' => '2026-01-02', 'date_to' => '2026-01-02']), 52,
+    [$otherTarget, array_replace($t46, ['requests' => 51, 'devices' => 1])], 'Inclusive date filter');
+$assertRead($readLogs(['mac' => '00-11-22-aa-bb-dd', 'model' => 't46s',
+    'date_from' => '2026-01-03', 'date_to' => '2026-01-03']), 1,
+    [array_replace($t46, ['requests' => 1, 'devices' => 1])], 'Combined filters');
+$result = $readLogs(['model' => 'T48S']);
+$assertRead($result, 0, [], 'Empty filter result');
+massupdate_access_assert($result['logs'] === [] && (int)$pdo->query('SELECT COUNT(*) FROM massupdate_log')->fetchColumn() === 66,
+    'View filtering does not delete hidden diagnostic records');
 
 foreach (['nl', 'en', 'fr'] as $language) {
     $translations = load_translations($language);

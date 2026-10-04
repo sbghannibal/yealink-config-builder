@@ -45,10 +45,8 @@ Ondersteunt naast bestaande Yealink-configuraties nu ook:
 
 ### Mass Update (`/massupdate/`)
 
-- Ondersteunde URL's (Yealink user-agent met model en firmwareversie verplicht):
-  - `/massupdate/<MAC>.cfg`, bv. `https://example.com/massupdate/249ad8667732.cfg`
-  - `/massupdate/y000000000NNN.cfg` (MAC uit de user-agent)
-  - `/massupdate/?mac=<MAC>` of `/massupdate/index.php?mac=<MAC>`
+- Alleen `/massupdate/<MAC>.cfg` is ondersteund, bv. `https://example.com/massupdate/249ad8667732.cfg`: precies 12 hexadecimale tekens, hoofdletterongevoelig. Een Yealink user-agent met model en firmwareversie is verplicht. Een MAC in query of user-agent moet overeenkomen met de bestandsnaam en kan die niet vervangen.
+- Modelbestanden zoals `/massupdate/y000000000146.cfg`, `/massupdate/` en `/massupdate/index.php` geven altijd een lege `404` voor GET/HEAD, ook met een geldige MAC in query of user-agent, zonder database, quotum of logging.
 - Een geleverde config begint altijd met `#!version:1.0.0.1`, gevolgd door alleen `firmware.url = ...`.
 - HTTP-statussen (altijd zonder body, behalve bij 200):
   - `200`: config geleverd (GET).
@@ -58,7 +56,7 @@ Ondersteunt naast bestaande Yealink-configuraties nu ook:
 - Het menu **Mass Update** bevat **Massupdate config** (de bestaande campagnepagina) en **Massupdate logging** (`/admin/massupdate_logging.php`). Beide zijn uitsluitend voor actieve Owners.
 - Voer vóór deployment `php setup/run_migrations.php` uit. Migratie `20_massupdate_log.sql` voegt `massupdate_log` toe met MAC-adres, toestelmodel, oude en nieuwe firmwareversie, campagne, resultaat, IP, User-Agent en tijdstip; tijdstip en MAC-adres zijn geïndexeerd. Bij verwijdering van een campagne blijft de log bewaard met een lege campagneverwijzing.
 - Ondersteunde GET-aanvragen loggen `served`, `up-to-date`, `quota`, `inactive` of `no-campaign`. HEAD, ongeldige/niet-ondersteunde aanvragen en andere methodes loggen niet en raken de database niet. Log- en opschoonfouten veranderen de provisioningresponse niet. `served` betekent dat de configuratie geleverd is, niet dat de firmware-installatie bevestigd is.
-- De loggingpagina toont nieuwste aanvragen eerst (50 per pagina), filters op MAC-adres, toesteltype en inclusief datumbereik, en aantallen aanvragen/unieke MAC-adressen per toesteltype en nieuwe softwareversie binnen die filters.
+- De loggingpagina toont uitsluitend `served`-aanvragen (HTTP 200) met bekende, niet-lege en verschillende oude en nieuwe firmwareversies, ook voor historische logregels. Nieuwste aanvragen staan eerst (50 per pagina), met filters op MAC-adres, toesteltype en inclusief datumbereik. Tellingen, paginering en aantallen aanvragen/unieke MAC-adressen per toesteltype en nieuwe softwareversie volgen dezelfde selectie en filters. Andere resultaten blijven diagnostisch opgeslagen tot de bewaartermijn verloopt.
 - **Logbewaartermijn (dagen)** staat standaard op **30**, is instelbaar van 1 tot 3650 op de loggingpagina en wordt opgeslagen als `settings.massupdate_log_retention_days`. Oudere logregels worden verwijderd bij het openen van de pagina en bij ongeveer 1% van de ondersteunde GET-aanvragen. **Nu opschonen** verwijdert direct alleen verlopen logregels via een CSRF-beveiligde POST. Zonder aanvragen of paginabezoek vindt geen opschoning plaats. Campagnes en quotumtellers blijven ongewijzigd.
 
 ## Installatie
